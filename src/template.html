@@ -1,0 +1,744 @@
+<title>Golem Basecamp</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#0f5566">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Big+Shoulders+Display:wght@700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>__LEAFLET_CSS__</style>
+<style>
+/* Layout: phone-first app shell — sticky header, one view at a time, bottom tab bar. Road-sign display type over a sea-mist ground; red is reserved for "home" and danger. */
+:root{
+  --bg:#e8eeed; --surface:#ffffff; --surface-2:#f2f6f5; --ink:#10252a; --muted:#53686d; --line:#cdd9d8;
+  --sea:#0f5566; --sea-ink:#ffffff; --sea-soft:#d4e6e9;
+  --red:#b3271f; --red-soft:#f8dfdc; --amber:#8f5c0c; --amber-soft:#f5e8cf; --green:#2a6e46; --green-soft:#d9eee0;
+  --land:#eef0e8; --water:#b9d9e3; --park:#dbe8d3; --road:#ffffff; --road-edge:#c4cbc2; --road-major:#f0c062; --urban:#e3e4dc; --water-line:#8fc0d0; --coast:#6aa7b8; --border:#9a6aa8;
+  --f-display:"Big Shoulders Display","Arial Narrow","Roboto Condensed",sans-serif;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --r:10px; --tabh:64px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b1618; --surface:#122326; --surface-2:#172c30; --ink:#e2ebec; --muted:#93a7aa; --line:#26393c;
+  --sea:#69b6c6; --sea-ink:#06191d; --sea-soft:#163a41;
+  --red:#ff6a5d; --red-soft:#3a1c19; --amber:#e4a94c; --amber-soft:#33270f; --green:#6dc290; --green-soft:#16301f;
+  --land:#142326; --water:#0a3540; --park:#17301f; --road:#4a6468; --road-edge:#0a1416; --road-major:#b8903f; --urban:#1b2f33; --water-line:#1f6070; --coast:#3a8496; --border:#b48ac2; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1618; --surface:#122326; --surface-2:#172c30; --ink:#e2ebec; --muted:#93a7aa; --line:#26393c;
+  --sea:#69b6c6; --sea-ink:#06191d; --sea-soft:#163a41;
+  --red:#ff6a5d; --red-soft:#3a1c19; --amber:#e4a94c; --amber-soft:#33270f; --green:#6dc290; --green-soft:#16301f;
+  --land:#142326; --water:#0a3540; --park:#17301f; --road:#4a6468; --road-edge:#0a1416; --road-major:#b8903f; --urban:#1b2f33; --water-line:#1f6070; --coast:#3a8496; --border:#b48ac2; color-scheme:dark}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--sea)}
+*{box-sizing:border-box}
+a{color:var(--sea)}
+h1,h2,h3{font-family:var(--f-display);font-weight:800;letter-spacing:.01em;line-height:1.05;text-wrap:balance;margin:0}
+h2{font-size:1.9rem}
+h3{font-size:1.35rem}
+p{margin:0}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:.86rem}
+.label{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700}
+button,.btn{font:inherit;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:.55rem 1rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:.4rem;min-height:44px}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
+.btn-primary{background:var(--sea);color:var(--sea-ink);border-color:var(--sea)}
+.btn-red{background:var(--red);color:#fff;border-color:var(--red)}
+.row{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+input,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:.6rem .7rem;width:100%}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--sea);color:var(--sea-ink);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:.55rem}
+.top-in{display:flex;align-items:center;justify-content:space-between;gap:.75rem;max-width:760px;margin:0 auto}
+.brand{font-family:var(--f-display);font-weight:800;font-size:1.55rem;letter-spacing:.03em;text-transform:uppercase}
+.brand span{opacity:.75;font-weight:700}
+.net{font-family:var(--f-mono);font-size:.72rem;padding:.2rem .55rem;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+
+main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:1rem calc(var(--tabh) + 1.5rem + env(safe-area-inset-bottom,0px))}
+.view{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:1rem}
+.view > *{min-width:0}
+
+/* bottom tabs */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.tabs-in{display:grid;grid-template-columns:repeat(5,1fr);max-width:760px;margin:0 auto;height:var(--tabh)}
+.tabs a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:var(--muted);font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.tabs a svg{width:24px;height:24px}
+.tabs a[aria-current="page"]{color:var(--sea)}
+.tabs a[aria-current="page"] svg{stroke-width:2.4}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:1rem;display:flex;flex-direction:column;gap:.75rem}
+.plain{display:flex;flex-direction:column;gap:.6rem}
+
+/* home card: the taxi sign */
+.sign{background:var(--sea);color:var(--sea-ink);border-radius:14px;padding:1.1rem 1.1rem 1rem;display:flex;flex-direction:column;gap:.8rem;position:relative;overflow:hidden}
+.sign::after{content:"";position:absolute;inset:6px;border:2px solid color-mix(in srgb,var(--sea-ink) 35%,transparent);border-radius:10px;pointer-events:none}
+.sign .hint{font-size:.84rem;opacity:.85}
+.sign .sq{font-family:var(--f-display);font-weight:800;font-size:clamp(1.7rem,6.5vw,2.4rem);line-height:1.05}
+.sign .en{opacity:.88}
+.sign .codes{display:flex;flex-wrap:wrap;gap:.4rem 1rem;font-family:var(--f-mono);font-size:.85rem}
+.sign .row{position:relative;z-index:1}
+.sign button,.sign .btn{background:transparent;color:var(--sea-ink);border-color:color-mix(in srgb,var(--sea-ink) 55%,transparent)}
+.sign .btn-solid{background:var(--sea-ink);color:var(--sea);border-color:var(--sea-ink)}
+
+.compass{display:grid;grid-template-columns:auto 1fr;gap:1rem;align-items:center}
+.dial{width:112px;height:112px;border-radius:50%;border:2px solid var(--line);background:var(--surface-2);position:relative}
+.dial .rim{position:absolute;inset:0;transition:transform .25s ease}
+.dial .rim span{position:absolute;top:3px;left:50%;transform:translateX(-50%);font-size:.68rem;font-weight:700;color:var(--muted);line-height:1}
+.dial .ahead{position:absolute;top:-2px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:10px solid var(--ink);display:none}
+.dial.heading .ahead{display:block}
+.dial.heading .rim span{top:14px}
+.dial.ontrack{border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 25%,transparent)}
+.dist small{display:block;font-family:var(--f-body);font-size:1rem;font-weight:700;letter-spacing:0;margin-top:.3rem}
+.dial.ontrack + .plain .dist small{color:var(--green)}
+.dial svg{position:absolute;inset:0;transition:transform .25s ease}
+.dist{font-family:var(--f-display);font-weight:800;font-size:2.4rem;line-height:1}
+
+.alert{border:1px solid color-mix(in srgb,var(--red) 45%,transparent);background:var(--red-soft);border-radius:var(--r);padding:.85rem .95rem;display:flex;flex-direction:column;gap:.4rem}
+.alert.amber{border-color:color-mix(in srgb,var(--amber) 45%,transparent);background:var(--amber-soft)}
+.alert.ok{border-color:color-mix(in srgb,var(--green) 45%,transparent);background:var(--green-soft)}
+.alert strong{font-weight:700;display:flex;align-items:center;gap:.45rem;color:var(--red)}
+.alert.ok strong{color:var(--green)}
+.alert strong svg{width:18px;height:18px;flex:none}
+.ico{width:18px;height:18px;flex:none;vertical-align:-3px}
+.between{justify-content:space-between}
+
+/* browser surfaces */
+::selection{background:var(--sea-soft);color:var(--ink)}
+input,textarea{caret-color:var(--sea)}
+html{scrollbar-color:var(--line) var(--bg)}
+input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:not(:disabled):active{transform:translateY(1px)}
+a{text-underline-offset:.18em}
+
+/* segmented toggle */
+.toggle{display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px;gap:3px}
+.toggle button{min-height:36px;border:0;background:transparent;padding:.3rem .9rem;font-size:.88rem;color:var(--muted)}
+.toggle button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgb(0 0 0 / .14)}
+
+/* meeting point */
+.meet{display:grid;grid-template-columns:auto 1fr auto;gap:.2rem .8rem;align-items:center;text-align:left;width:100%;border-radius:var(--r);padding:.75rem .85rem;background:var(--surface-2);border:1px solid var(--line);min-height:64px}
+.meet .pin{width:30px;height:30px;grid-row:1/3}
+.meet b{font-size:1.05rem}
+.meet .by{grid-column:2;font-weight:400;font-size:.84rem;color:var(--muted)}
+.meet .go{grid-row:1/3;grid-column:3;color:var(--sea);font-size:.85rem;display:flex;align-items:center;gap:.2rem}
+.opts{display:flex;flex-wrap:wrap;gap:.4rem}
+.opts button{min-height:40px;font-size:.88rem}
+
+/* pin form + pick banner */
+.mapfab{position:absolute;right:10px;bottom:28px;z-index:550;display:flex;flex-direction:column;align-items:flex-end;gap:.45rem}
+.mapfab button{box-shadow:0 2px 8px rgb(0 0 0 / .22);min-height:42px;font-size:.88rem}
+.mapping .mapfab{display:none}
+.pickbar{position:absolute;left:10px;right:10px;top:10px;z-index:600;background:var(--ink);color:var(--bg);border-radius:8px;padding:.55rem .7rem;display:flex;align-items:center;justify-content:space-between;gap:.6rem;font-weight:700;font-size:.9rem;box-shadow:0 3px 12px rgb(0 0 0 / .25)}
+.pickbar button{min-height:34px;padding:.2rem .75rem;font-size:.82rem;background:transparent;color:var(--bg);border-color:color-mix(in srgb,var(--bg) 50%,transparent)}
+.pinform{display:grid;gap:.6rem}
+.pinform .two{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.pinform select{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:.55rem .6rem}
+.pinform label.check{flex-direction:row;font-weight:400;color:var(--ink);font-size:.9rem}
+.pinform label{display:flex;flex-direction:column;gap:.25rem;font-size:.82rem;font-weight:700;color:var(--muted)}
+.mapping .leaflet-container{cursor:crosshair}
+.popbtns{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.5rem}
+.popbtns button{min-height:32px;padding:.15rem .65rem;font-size:.8rem}
+.popbtns button.danger{color:var(--red);border-color:color-mix(in srgb,var(--red) 40%,transparent)}
+
+/* sheet (name prompt) */
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:120;background:var(--surface);border-top:1px solid var(--line);border-radius:16px 16px 0 0;box-shadow:0 -6px 24px rgb(0 0 0 / .18);padding-block:1rem calc(1rem + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.sheet-in{max-width:760px;margin:0 auto;display:grid;gap:.6rem}
+
+/* live location */
+.switch{width:56px;min-height:32px;height:32px;padding:0;border-radius:999px;background:var(--line);border:0;position:relative;flex:none}
+.switch span{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:var(--surface);box-shadow:0 1px 3px rgb(0 0 0 / .3);transition:transform .2s cubic-bezier(.2,.8,.2,1)}
+.switch[aria-checked="true"]{background:var(--green)}
+.switch[aria-checked="true"] span{transform:translateX(24px)}
+.peers{display:flex;flex-direction:column;gap:.35rem}
+.peer{justify-content:flex-start;gap:.6rem;border-radius:8px;background:var(--surface-2);min-height:44px;font-weight:400;text-align:left}
+.peer i{width:12px;height:12px;border-radius:50%;flex:none;box-shadow:0 0 0 2px var(--surface)}
+.peer b{font-weight:700}
+.peer span{color:var(--muted);font-size:.84rem;margin-left:auto}
+.sharefab[aria-pressed="true"]{background:var(--green);color:#fff;border-color:var(--green)}
+.leaflet-tooltip.peerlabel{background:var(--ink);color:var(--bg);border:0;border-radius:6px;padding:2px 7px;font-family:var(--f-body);font-weight:700;font-size:12px;box-shadow:0 1px 4px rgb(0 0 0 / .3)}
+.leaflet-tooltip.peerlabel::before{border-top-color:var(--ink)}
+#confirmSheet{z-index:130}
+/* lock */
+.lockline{display:flex;align-items:center;gap:.4rem;font-size:.84rem;color:var(--green);font-weight:700}
+.lockline button{min-height:32px;padding:.15rem .7rem;font-size:.8rem;margin-left:auto}
+.msg.locked{opacity:.6;font-style:italic}
+
+.sos{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem}
+.sos div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:.55rem .4rem;text-align:center}
+.sos b{display:block;font-family:var(--f-display);font-size:1.8rem;line-height:1;color:var(--red)}
+.sos span{font-size:.74rem;color:var(--muted)}
+
+.check{display:flex;gap:.6rem;align-items:flex-start;padding:.35rem 0}
+.checkitem{display:flex;align-items:center;gap:.4rem}
+.checkitem .check{flex:1;min-width:0}
+.checkitem .check span{overflow-wrap:anywhere}
+.checkitem .check input:checked+span{text-decoration:line-through;color:var(--muted)}
+.checkitem button{min-height:36px;width:36px;padding:0;justify-content:center;border-color:transparent;background:transparent;color:var(--muted)}
+.check input{width:22px;height:22px;flex:none;margin-top:.1rem;accent-color:var(--sea)}
+
+/* chips */
+.chips{display:flex;gap:.4rem;overflow-x:auto;padding-bottom:.2rem;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;min-height:38px;padding:.35rem .85rem;font-size:.88rem;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-weight:700}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:.2rem;vertical-align:middle}
+
+/* places */
+.list{display:flex;flex-direction:column;gap:.6rem}
+.place{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:.85rem .95rem;display:grid;grid-template-columns:1fr auto;gap:.35rem .75rem}
+.place > *{min-width:0}
+.place h3{font-size:1.3rem}
+.place .tags{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.25rem}
+.place .meta{display:flex;flex-wrap:wrap;gap:.2rem .7rem;font-size:.86rem;color:var(--muted)}
+.place .note{grid-column:1/-1;font-size:.95rem}
+.place .acts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:.4rem}
+.place .acts button,.place .acts a{min-height:36px;padding:.3rem .8rem;font-size:.85rem}
+.score{font-family:var(--f-display);font-weight:800;font-size:1.6rem;line-height:1;text-align:right}
+.score small{display:block;font-family:var(--f-body);font-weight:400;font-size:.7rem;color:var(--muted)}
+.badge{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:.1rem .45rem;border-radius:4px;background:var(--surface-2);color:var(--muted)}
+.badge.red{background:var(--red-soft);color:var(--red)}
+.badge.amber{background:var(--amber-soft);color:var(--amber)}
+.place.avoid{border-color:var(--red)}
+.place.protest{border-color:var(--red);background:var(--red-soft)}
+
+/* map */
+.mapwrap{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);height:calc(100dvh - 190px - var(--tabh) - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));min-height:340px}
+#map{position:absolute;inset:0;background:var(--land)}
+.mapbar{display:flex;flex-wrap:wrap;gap:.4rem}
+.mapbar button{min-height:38px;padding:.3rem .8rem;font-size:.85rem}
+.maptip{position:absolute;left:10px;right:10px;top:10px;z-index:500;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:.5rem .7rem;font-size:.86rem;box-shadow:0 2px 10px rgb(0 0 0 / .15)}
+.leaflet-container{font-family:var(--f-body);background:var(--land)}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--surface);color:var(--ink)}
+.leaflet-popup-content{margin:.7rem .9rem;font-size:.9rem;line-height:1.4}
+.leaflet-popup-content b{font-family:var(--f-display);font-size:1.15rem}
+.leaflet-bar a{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.leaflet-control-attribution{background:color-mix(in srgb,var(--surface) 85%,transparent)!important;color:var(--muted)}
+.leaflet-control-attribution a{color:var(--sea)}
+.leaflet-tooltip.rlabel{background:transparent;border:0;box-shadow:none;padding:0;color:var(--muted);font-family:var(--f-body);font-size:10.5px;font-weight:400;text-shadow:0 0 3px var(--land),0 0 3px var(--land)}
+.leaflet-tooltip.rlabel::before{display:none}
+.lowzoom .leaflet-tooltip.rlabel{display:none}
+.leaflet-tooltip.plabel{background:transparent;border:0;box-shadow:none;padding:0;color:var(--ink);font-family:var(--f-body);font-weight:700;font-size:11px;text-shadow:0 0 3px var(--land),0 0 3px var(--land),0 0 2px var(--land)}
+.leaflet-tooltip.plabel::before{display:none}
+.leaflet-tooltip.p-city{font-size:15px;font-family:var(--f-display);letter-spacing:.03em;text-transform:uppercase}
+.leaflet-tooltip.p-town{font-size:13px}
+.leaflet-tooltip.p-suburb{font-weight:400;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-size:10px}
+.homepin{width:34px;height:34px;filter:drop-shadow(0 1px 2px rgb(0 0 0 / .4))}
+
+/* info */
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem}
+.seg .chip{padding-inline:.4rem}
+.prose{display:flex;flex-direction:column;gap:.6rem}
+.prose ul{margin:0;padding-left:1.1rem;display:flex;flex-direction:column;gap:.35rem}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:.25rem .9rem;font-size:.95rem}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+.conv{display:grid;grid-template-columns:1fr auto 1fr;gap:.5rem;align-items:end}
+.conv label{display:flex;flex-direction:column;gap:.2rem;font-size:.8rem;color:var(--muted);font-weight:700}
+.conv input{font-family:var(--f-mono);font-size:1.25rem}
+.phrase{display:grid;grid-template-columns:1fr auto;gap:.1rem .6rem;padding:.6rem 0;border-bottom:1px solid var(--line)}
+.phrase:last-child{border-bottom:0}
+.phrase .sq{font-weight:700;font-size:1.08rem}
+.phrase .pr{font-family:var(--f-mono);font-size:.8rem;color:var(--muted)}
+.phrase button{grid-row:1/4;grid-column:2;align-self:center;min-height:36px;padding:.25rem .7rem;font-size:.8rem}
+.sources a{word-break:break-word}
+
+/* chat */
+.chatwrap{position:relative;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;isolation:isolate}
+.chatbg{position:absolute;inset:0;background-position:center;background-size:cover;opacity:var(--bg-op,.35);z-index:-1;pointer-events:none}
+.chatbox{display:flex;flex-direction:column;gap:.5rem;height:calc(100dvh - 300px - var(--tabh));min-height:300px;overflow-y:auto;padding:.75rem}
+.row-msg{display:flex;align-items:flex-end;gap:.45rem;max-width:88%;align-self:flex-start}
+.row-msg.me{align-self:flex-end;flex-direction:row-reverse}
+.row-msg .msg{max-width:100%;min-width:0}
+.avatar{width:32px;height:32px;border-radius:50%;flex:none;background:var(--line) center/cover no-repeat;display:grid;place-items:center;color:#fff;font-weight:700;font-size:.8rem;box-shadow:0 0 0 2px var(--surface);overflow:hidden;text-transform:uppercase}
+.avatar.xl{width:72px;height:72px;font-size:1.6rem}
+.row-msg.same .avatar{visibility:hidden}
+.iconbtn{width:44px;height:44px;padding:0;justify-content:center;border-radius:50%}
+.iconbtn svg{width:22px;height:22px}
+.iconbtn[aria-expanded="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.setrow{display:flex;gap:.9rem;align-items:center}
+.bgthumb{width:56px;height:40px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2) center/cover}
+.sep{border:0;border-top:1px solid var(--line);margin:.2rem 0;width:100%}
+.visually-hidden{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+input[type=range]{width:100%;accent-color:var(--sea)}
+label.btn:focus-within{outline:3px solid var(--sea);outline-offset:2px}
+.msg{max-width:85%;background:var(--surface);border:1px solid var(--line);border-radius:12px 12px 12px 4px;padding:.45rem .7rem;align-self:flex-start}
+.msg.me{align-self:flex-end;background:var(--sea);color:var(--sea-ink);border-color:var(--sea);border-radius:12px 12px 4px 12px}
+.msg .who{font-size:.75rem;font-weight:700;opacity:.8;display:flex;gap:.5rem}
+.msg .txt{white-space:pre-wrap;word-break:break-word}
+.msg.status .txt{font-weight:700}
+.compose{display:grid;grid-template-columns:1fr auto;gap:.5rem}
+.compose textarea{resize:none;height:48px}
+.empty{color:var(--muted);text-align:center;margin:auto;padding:1rem;max-width:30ch}
+
+/* big-sign overlay */
+.overlay{position:fixed;inset:0;z-index:100;background:#fff;color:#111;display:flex;flex-direction:column;justify-content:center;gap:1.2rem;padding:calc(env(safe-area-inset-top,0px) + 1.5rem) max(24px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 1.5rem) max(24px,env(safe-area-inset-left,0px))}
+.overlay .big{font-family:var(--f-display);font-weight:800;font-size:clamp(2.2rem,10vw,4.2rem);line-height:1.02}
+.overlay .sub{font-size:1.1rem;color:#444}
+.overlay .code{font-family:var(--f-mono);font-size:1.15rem;color:#111}
+.overlay button{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:max(12px,env(safe-area-inset-right,0px));background:#111;color:#fff;border-color:#111}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--tabh) + 16px + env(safe-area-inset-bottom,0px));z-index:90;background:var(--ink);color:var(--bg);padding:.5rem 1rem;border-radius:999px;font-weight:700;font-size:.9rem}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="top"><div class="top-in">
+  <div class="brand">Golem <span>Basecamp</span></div>
+  <div class="net" id="net">checking…</div>
+</div></header>
+
+<main>
+<!-- ============ HOME ============ -->
+<section class="view" id="v-home">
+  <div class="sign" aria-label="Taxi card" id="taxiCard" hidden>
+    <div class="sq" id="taxiSq"></div>
+    <div class="en small" id="taxiEn"></div>
+    <div class="codes"><span>Plus code <b id="plus"></b></span><span id="coords"></span></div>
+    <p class="hint" id="homeBy">Show this card to a taxi driver.</p>
+    <div class="row">
+      <button class="btn-solid" id="bigBtn" type="button">Show to driver</button>
+      <button type="button" id="copyAddr">Copy address</button>
+      <button type="button" id="copyLL">Copy coordinates</button>
+      <a class="btn" id="gmapsHome" target="_blank" rel="noopener">Open in Maps</a>
+      <button type="button" id="homeEdit">Edit</button>
+    </div>
+  </div>
+
+  <div class="panel" id="homeEmpty" hidden>
+    <h3>Where are we staying?</h3>
+    <p class="small" id="homeEmptyText">The address isn't stored in the app itself, so it stays private. Unlock the group with your passphrase and it loads from the group, encrypted.</p>
+    <div class="row"><button type="button" class="btn-primary" id="homeUnlock">Unlock the group</button><button type="button" id="homeSet">Set it now</button></div>
+  </div>
+
+  <form class="panel pinform" id="homeForm" hidden>
+    <h3>Where we're staying</h3>
+    <p class="small muted">Saved encrypted and shared with everyone who has the group passphrase. Only one person needs to do this.</p>
+    <label for="hAddr">Address, as a taxi driver would say it<input id="hAddr" maxlength="120" placeholder="e.g. Golem, Rruga …" required></label>
+    <label for="hSq">Directions for the driver, in Albanian (optional)<input id="hSq" maxlength="200" placeholder="e.g. Afër …"></label>
+    <label for="hEn">The same in English (optional)<input id="hEn" maxlength="200" placeholder="e.g. Blue gate next to the pharmacy"></label>
+    <label for="hLL">Coordinates or a Google Maps link<input id="hLL" maxlength="300" placeholder="e.g. 41.3275, 19.8187" inputmode="url"></label>
+    <div class="row"><button type="button" id="hPick">Pick on the map</button><span class="small muted" id="hLLnote"></span></div>
+    <div class="row"><button type="submit" class="btn-primary">Save for the group</button><button type="button" id="hCancel">Cancel</button></div>
+    <p class="small" id="hErr" role="alert"></p>
+  </form>
+
+  <div class="panel">
+    <div class="row between">
+      <h3 id="wayTitle">Which way is home?</h3>
+      <div class="toggle" role="group" aria-label="Compass target">
+        <button type="button" data-target="home" aria-pressed="true">Home</button>
+        <button type="button" data-target="meet" aria-pressed="false">Meeting point</button>
+      </div>
+    </div>
+    <div class="row"><button class="btn-primary" type="button" id="findBtn">Start compass</button></div>
+    <div class="compass">
+      <div class="dial" id="dial" aria-hidden="true">
+        <div class="rim" id="rim"><span>N</span></div>
+        <span class="ahead" id="ahead"></span>
+        <svg id="arrow" viewBox="0 0 112 112"><path id="arrowPath" d="M56 14 L72 70 L56 60 L40 70 Z" fill="var(--red)"/><circle cx="56" cy="56" r="4" fill="var(--ink)"/></svg>
+      </div>
+      <div class="plain">
+        <div class="dist" id="dist">—</div>
+        <p class="small muted" id="distNote">Uses your phone's GPS, which works without internet. If location is blocked here, use the offline copy or Organic Maps (see Info → Offline).</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="meetPanel">
+    <div class="row between">
+      <h3>Meeting point</h3>
+      <button type="button" id="meetEdit" aria-expanded="false">Change</button>
+    </div>
+    <button type="button" class="meet" id="meetCard">
+      <svg class="pin" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 33C17 33 4 20 4 12a13 13 0 0 1 26 0c0 8-13 21-13 21Z" fill="var(--amber)" stroke="var(--surface)" stroke-width="2"/><circle cx="17" cy="12" r="4.5" fill="var(--surface)"/></svg>
+      <b id="meetLabel"></b>
+      <span class="by" id="meetBy"></span>
+      <span class="go">Map <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg></span>
+    </button>
+    <div class="opts" id="meetOpts" hidden>
+      <button type="button" id="meetPick">Pick on the map</button>
+      <button type="button" id="meetHere">Use where I am</button>
+      <button type="button" id="meetReset">Back to our place</button>
+    </div>
+    <p class="small muted" id="meetShare"></p>
+  </div>
+
+  <div class="panel" id="sharePanel" hidden>
+    <div class="row between">
+      <h3>Live location</h3>
+      <button type="button" class="switch" id="shareSw" role="switch" aria-checked="false" aria-label="Share my location"><span></span></button>
+    </div>
+    <p class="small" id="shareStatus" role="status"></p>
+    <div class="peers" id="peerList"></div>
+    <p class="small muted" id="shareHow"></p>
+  </div>
+
+  <div class="alert">
+    <strong><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17v.5" stroke-linecap="round"/></svg>Tirana centre: protests ongoing</strong>
+    <p class="small">Student-led anti-government protests have run daily since 13 Oct (day 22 on 3 Nov), with tear gas and petrol bombs around Skanderbeg Square, the PM's office and the Ministry of Education, mostly late afternoon and evening. Golem and Durrës are not affected. Visit Tirana by day and leave before dusk.</p>
+    <a href="#info" data-info="safety" class="small">Zones, times and sources</a>
+  </div>
+
+  <div class="panel">
+    <h3>Emergency numbers</h3>
+    <div class="sos">
+      <div><b>112</b><span>Any emergency</span></div>
+      <div><b>129</b><span>Police</span></div>
+      <div><b>127</b><span>Ambulance</span></div>
+      <div><b>128</b><span>Fire</span></div>
+    </div>
+    <p class="small muted">Nearest hospital: Regional Hospital Durrës, about 20 km north. Pharmacies are along the promenade.</p>
+  </div>
+
+  <div class="panel">
+    <label for="notes"><h3>My notes</h3></label>
+    <p class="small muted">Saved on this phone only.</p>
+    <textarea id="notes" rows="3" placeholder="Apartment number, floor, host's phone, door instructions…"></textarea>
+  </div>
+
+  <div class="panel">
+    <h3>Checklist</h3>
+    <form class="compose" id="checkForm"><input id="checkIn" maxlength="120" placeholder="Add an item, e.g. Buy SIM card" aria-label="New checklist item"><button type="submit" class="btn-primary">Add</button></form>
+    <div id="checklist"></div>
+    <p class="small muted">Saved on this phone only.</p>
+  </div>
+  <p class="small muted">Info gathered 4 Nov 2026. Ratings are from TripAdvisor; street data from OpenStreetMap. Off-season: many beach places close in November, so check before walking over.</p>
+</section>
+
+<!-- ============ MAP ============ -->
+<section class="view" id="v-map" hidden>
+  <div class="chips" role="group" aria-label="Jump to area">
+    <button type="button" class="chip" data-go="golem" aria-pressed="true">Golem</button>
+    <button type="button" class="chip" data-go="durres" aria-pressed="false">Durrës</button>
+    <button type="button" class="chip" data-go="tirana" aria-pressed="false">Tirana</button>
+    <button type="button" class="chip" data-go="airport" aria-pressed="false">Airport</button>
+    <button type="button" class="chip" data-go="region" aria-pressed="false">All Albania</button>
+    <button type="button" class="chip" id="tileBtn" aria-pressed="false" hidden>Street map (online)</button>
+  </div>
+  <div class="chips" id="mapChips" role="group" aria-label="Show on map"></div>
+  <div class="mapwrap" id="mapwrap"><div id="map" role="application" aria-label="Map"></div>
+    <div class="mapfab">
+      <button type="button" id="mapShareSw" aria-pressed="false" class="sharefab"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8"/></svg>Share location</button>
+      <button type="button" id="locBtn" aria-label="Locate me"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Locate me</button>
+      <button type="button" id="addPinBtn" class="btn-primary"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 21s-7-7-7-12a7 7 0 0 1 14 0c0 5-7 12-7 12z"/><path d="M12 6v6M9 9h6"/></svg>Add pin</button>
+    </div>
+    <div class="pickbar" id="pickbar" hidden><span id="pickText">Tap the map where the pin goes</span><button type="button" id="pickCancel">Cancel</button></div>
+    <div class="maptip" id="maptip" hidden></div></div>
+  <form class="panel pinform" id="pinForm" hidden>
+    <h3 id="pinFormTitle">New pin</h3>
+    <label for="pinLabel">Name<input id="pinLabel" maxlength="60" placeholder="e.g. Good byrek place" required></label>
+    <label for="pinNote">Note<input id="pinNote" maxlength="200" placeholder="Optional"></label>
+    <label class="check" for="pinAvoid"><input type="checkbox" id="pinAvoid"><span>Area to avoid (protest, crowd, trouble). Shows as a red circle for 12 hours.</span></label>
+    <label for="pinRadius" id="pinRadiusWrap" hidden>Size of the area<select id="pinRadius"><option value="150">Small (150 m)</option><option value="300" selected>Medium (300 m)</option><option value="700">Large (700 m)</option></select></label>
+    <p class="small muted" id="pinWhere"></p>
+    <div class="row">
+      <button type="submit" class="btn-primary" id="pinSave">Save pin</button>
+      <button type="button" id="pinMeet">Make it the meeting point</button>
+      <button type="button" id="pinCancel">Cancel</button>
+    </div>
+    <p class="small muted" id="pinShareNote"></p>
+  </form>
+  <p class="small muted">The whole of Albania is built in and works offline: every road, town, river and lake from OpenStreetMap (data of 3 Nov 2026). Long-press the map (or right-click) to drop a pin there.</p>
+</section>
+
+<!-- ============ PLACES ============ -->
+<section class="view" id="v-places" hidden>
+  <h2>Places</h2>
+  <div class="seg" role="group" aria-label="Area">
+    <button type="button" class="chip" data-area="golem" aria-pressed="true">Golem</button>
+    <button type="button" class="chip" data-area="durres" aria-pressed="false">Durrës</button>
+    <button type="button" class="chip" data-area="tirana" aria-pressed="false">Tirana</button>
+    <button type="button" class="chip" data-area="pins" aria-pressed="false">Our pins</button>
+  </div>
+  <div class="chips" id="catChips" role="group" aria-label="Category"></div>
+  <div class="list" id="placeList"></div>
+</section>
+
+<!-- ============ INFO ============ -->
+<section class="view" id="v-info" hidden>
+  <div class="chips" role="group" aria-label="Topic" id="infoChips">
+    <button type="button" class="chip" data-sec="move" aria-pressed="true">Getting around</button>
+    <button type="button" class="chip" data-sec="money" aria-pressed="false">Money</button>
+    <button type="button" class="chip" data-sec="safety" aria-pressed="false">Safety & avoid</button>
+    <button type="button" class="chip" data-sec="phrases" aria-pressed="false">Phrases</button>
+    <button type="button" class="chip" data-sec="offline" aria-pressed="false">Offline setup</button>
+    <button type="button" class="chip" data-sec="sources" aria-pressed="false">Sources</button>
+  </div>
+
+  <div class="isec" id="s-move">
+    <div class="view" style="max-width:none">
+      <h2>Getting around</h2>
+      <div class="panel prose">
+        <h3>Arrival: airport to Golem</h3>
+        <p><b>Easiest for the group:</b> two taxis or a pre-booked minivan straight to Golem. Published fares are about <b>€40–48 per car</b>, 45–60 minutes. The route goes west via Vorë and Durrës and does not pass through central Tirana, so the protests don't affect it.</p>
+        <ul>
+          <li>Agree the price before loading bags. Ask "Sa kushton deri në Golem?" and confirm lek or euro.</li>
+          <li>Drivers who approach you inside the terminal tend to quote high, often in euros.</li>
+          <li>Uber doesn't operate in Albania.</li>
+        </ul>
+        <p><b>Budget option:</b> airport bus to Durrës bus station, <span class="mono">600 lek</span> cash. Listed departures from the airport: <span class="mono">10:00 · 12:00 · 14:00 · 15:30 · 17:00 · 19:00 · 21:00</span> (check at the airport bus bays). From Durrës, a taxi to Golem is <span class="mono">1,500–2,000 lek</span>, or take the Golem bus from the roadside by the station (<span class="mono">100 lek</span>).</p>
+      </div>
+      <div class="panel prose">
+        <h3>Golem ⇄ Durrës</h3>
+        <dl class="kv">
+          <dt>Stop</dt><dd>On the main road through Golem ("Bus to Durres" on the map)</dd>
+          <dt>Bus</dt><dd>Red city bus, sign "Durres–Golem" (F.D.A. Line)</dd>
+          <dt>Every</dt><dd>~30 min from about 06:15; no printed timetable, just wait</dd>
+          <dt>Fare</dt><dd class="mono">100 lek, cash to the conductor</dd>
+          <dt>Time</dt><dd>~30 min to Durrës bus station</dd>
+          <dt>Last bus</dt><dd>Around 20:00–20:30 in summer, likely earlier in November. Ask: "Kur nis autobusi i fundit?"</dd>
+        </dl>
+        <p class="small muted">In Durrës, the bus back leaves from the roadside by the main bus station and also stops at the Plepa interchange.</p>
+      </div>
+      <div class="panel prose">
+        <h3>Golem ⇄ Tirana</h3>
+        <p>Intercity buses heading north stop at the Golem roundabout. Timetables list departures from <span class="mono">06:48</span>, <span class="mono">€3–8</span>, about 40–50 min, arriving at Tirana's East Terminal or the North &amp; South Terminal. Both are outside the centre, so add a taxi or city bus.</p>
+        <p>Back: from the North &amp; South Terminal, take a bus towards Kavajë and ask the driver to stop in Golem (listed departures roughly 07:00–17:00, <span class="mono">300 lek</span>). Aim to leave Tirana before dark, which is also when protests pick up.</p>
+        <p>Airport ⇄ Tirana centre: hourly bus, <span class="mono">400 lek</span>, stops behind the Opera on Skanderbeg Square, inside the protest zone.</p>
+      </div>
+      <div class="panel prose">
+        <h3>Taxis</h3>
+        <ul>
+          <li>Durrës → Golem: <span class="mono">1,500–2,000 lek</span> (€15–20).</li>
+          <li>Airport or Tirana → Golem: about <span class="mono">€40–48</span>.</li>
+          <li>Always agree the fare first and pay in lek. Show the taxi card on the Home tab.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="isec" id="s-money" hidden>
+    <div class="view" style="max-width:none">
+      <h2>Money</h2>
+      <div class="panel">
+        <div class="label">Converter</div>
+        <div class="conv">
+          <label for="eurIn">Euro<input id="eurIn" inputmode="decimal" value="10"></label>
+          <svg class="ico muted" style="margin-bottom:.9rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9h15l-4-4M20 15H5l4 4"/></svg>
+          <label for="allIn">Lek<input id="allIn" inputmode="decimal"></label>
+        </div>
+        <div class="row small"><label for="rateIn" class="muted">Rate: 1 € =</label>
+          <input id="rateIn" inputmode="decimal" class="mono" style="width:6.5rem;padding:.35rem .5rem"> <span class="muted">lek (market rate was 90.8 on 26 Oct 2026; edit to what the office offers)</span></div>
+        <p class="small" id="oldLek"></p>
+      </div>
+      <div class="panel prose">
+        <h3>What works best</h3>
+        <ul>
+          <li><b>Bring euro notes and change them at a city exchange office.</b> Many offices charge no commission. Ask "Pa komision?" and the rate before handing over cash, and count it at the counter.</li>
+          <li><b>Skip the airport counters and ATMs.</b> r/tirana users report clearly worse rates there.</li>
+          <li><b>ATMs all charge foreign cards</b>, usually 600–900 lek per withdrawal. Take out larger amounts less often. One Reddit user found Union Bank cheapest (about 500 lek).</li>
+          <li><b>Always decline the conversion</b> ("Decline / Without conversion" or "Charge in ALL") at ATMs and card terminals. Accepting it adds the bank's own markup.</li>
+          <li>Euros are often accepted, but at a poor rate. Pay buses, cafés and small shops in lek; supermarkets and hotels take cards.</li>
+          <li><b>Old lek:</b> people sometimes quote prices ×10 (a 1,000-lek meal said as "10,000"). Ask "Në lekë të rinj?"</li>
+        </ul>
+      </div>
+      <div class="panel prose">
+        <h3>Where to change</h3>
+        <p><b>Golem:</b> the Western Union exchange and Lika, both on Rruga e Detit, on the way to the beach. Opening hours aren't published; small offices usually work daytime and keep shorter hours off-season, so ask when you pass and write it in your notes. ATMs are along Rruga e Detit and the promenade.</p>
+        <p><b>Durrës:</b> several offices in the centre around Rruga Fetah Bllaca and Rruga Kristaq Rama.</p>
+        <p><b>Tirana:</b> Iliria'98 is the chain Reddit recommends most. Its Rruga e Kavajës and Blloku branches are near the protest zone, so go in daytime.</p>
+        <a href="#places" data-places="money" class="small">See exchange offices and ATMs on the list</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="isec" id="s-safety" hidden>
+    <div class="view" style="max-width:none">
+      <h2>Safety &amp; avoid</h2>
+      <div class="alert">
+        <strong>Protests in Tirana (ongoing)</strong>
+        <dl class="kv small">
+          <dt>Since</dt><dd>13 Oct 2026; 22nd day on 3 Nov. Students and young people demanding PM Rama's resignation.</dd>
+          <dt>Where</dt><dd>Skanderbeg Square, Dëshmorët e Kombit Boulevard, the PM's office and Parliament, the Ministry of Education (Rruga e Durrësit). Red zones on the map.</dd>
+          <dt>When</dt><dd>Crowds build late afternoon and evening; clashes have mostly been after dark.</dd>
+          <dt>What</dt><dd>Tear gas, water cannon and rubber bullets; petrol bombs and fireworks thrown. 272 injured in the first week. Shops in the centre pull down shutters.</dd>
+          <dt>Elsewhere</dt><dd>Smaller protests reported in Shkodër, Elbasan and Korçë. Nothing reported in Golem.</dd>
+          <dt>Advice</dt><dd>The UK says avoid demonstrations and large gatherings in central Tirana; it does not advise against travel. If you see a crowd or police lines, walk away and check the group chat.</dd>
+        </dl>
+      </div>
+      <div class="panel prose">
+        <h3>Check before going to Tirana</h3>
+        <p>The red zones on the map are the usual hotspots as of 3 Nov and don't update themselves. No source publishes protest locations as live data, but these post each one before it starts, with the time and place:</p>
+        <ul>
+          <li><a href="https://al.usembassy.gov/" target="_blank" rel="noopener">U.S. Embassy Tirana</a>: "Demonstration Alert" notices naming streets and times, usually a day ahead.</li>
+          <li><a href="https://euronews.al/en/" target="_blank" rel="noopener">Euronews Albania (English)</a> and <a href="https://albaniandailynews.com/" target="_blank" rel="noopener">Albanian Daily News</a>: same-day reports on where crowds are heading.</li>
+          <li><a href="https://www.gov.uk/foreign-travel-advice/albania" target="_blank" rel="noopener">GOV.UK Albania advice</a>: the overall picture.</li>
+        </ul>
+        <p class="small muted">If you spot trouble, long-press the map and tick "Area to avoid" to warn the others for 12 hours.</p>
+      </div>
+      <div class="panel prose">
+        <h3>Avoid list</h3>
+        <ul>
+          <li><b>Airport exchange counters and ATMs</b> — worse rates than the city.</li>
+          <li><b>Taxi drivers who approach you in the terminal</b> — fares quoted high in euros.</li>
+          <li><b>Bars where staff sit down with you or order for you</b> — the bill can be several times normal. Ask for a priced menu and pay per round.</li>
+          <li><b>Fish priced per 100 g or per kilo</b> — ask "per portion or per kilo?" and see the fish before it's cooked. Decline bread or salad you didn't order, or ask the price.</li>
+          <li><b>Old-lek prices</b> — if a number sounds ten times too high, ask "new lek?"</li>
+          <li><b>Lower-rated Golem restaurants</b> on TripAdvisor: Sea Zone (3.3), Arome Deti (3.7), Ujvara (3.9).</li>
+          <li><b>Unofficial "guides" around Skanderbeg Square</b> who steer you to shops for a commission.</li>
+        </ul>
+      </div>
+      <div class="panel prose">
+        <h3>Night out</h3>
+        <ul>
+          <li>Agree a return plan before the last bus; a taxi home from Durrës is 1,500–2,000 lek.</li>
+          <li>Post "Home safe" in the group chat when you get back.</li>
+          <li>Keep the taxi card one tap away: Home tab → Show to driver.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="isec" id="s-phrases" hidden>
+    <div class="view" style="max-width:none">
+      <h2>Phrases</h2>
+      <p class="small muted">Tap "Show" to display a phrase full-screen. Note: some older Albanians nod for "no" and shake their head for "yes", so listen for "po" (yes) and "jo" (no).</p>
+      <div id="phraseList" class="plain"></div>
+    </div>
+  </div>
+
+  <div class="isec" id="s-offline" hidden>
+    <div class="view" style="max-width:none">
+      <h2>Offline setup</h2>
+      <div class="panel prose">
+        <h3>Do this on Wi-Fi before going out</h3>
+        <ul>
+          <li><b>Organic Maps</b> (free, Android and iOS) works fully offline with walking directions. Download the Albania map in the app, then open the pins file <span class="mono">golem-pins.kml</span> shared in the group to load home and every place in this app.</li>
+          <li><b>Google Maps:</b> download an offline area covering Golem and Durrës, and save the home address as a starred place.</li>
+          <li><b>Screenshot the taxi card</b> (Home → Show to driver). It works with no battery-hungry apps.</li>
+          <li><b>This page:</b> once loaded it keeps working in an open tab with no signal. Don't close or refresh the tab while offline.</li>
+          <li id="fileTip"><b>Fully offline copy:</b> <span class="mono">golem-basecamp.html</span>, shared in the group. On Android, save it and open it in Chrome; it then works with no internet at all, including the GPS arrow. On iPhone, keep this online page open in a Safari tab instead.</li>
+        </ul>
+        <p class="small muted">The live group chat needs internet; everything else in this app is built in. Without signal, messages wait in the outbox, and you can pass the ledger between phones (Chat tab).</p>
+      </div>
+      <div class="panel prose">
+        <h3>Chat with no internet at all</h3>
+        <p>A web page can't link phones directly. If you'll be out of signal together a lot, install one of these native apps. They pass messages phone to phone over Bluetooth, no internet or SIM needed:</p>
+        <ul>
+          <li><b>bitchat</b>: Bluetooth mesh chat, iPhone and Android. Range is roughly 10 to 100 m per hop, and phones relay for each other.</li>
+          <li><b>Briar</b>: encrypted messenger that syncs over Bluetooth or shared Wi-Fi. Android only.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="isec" id="s-sources" hidden>
+    <div class="view" style="max-width:none">
+      <h2>Sources</h2>
+      <p class="small muted">Golem had no useful Reddit threads, so restaurant picks lean on TripAdvisor ratings; money advice comes from r/tirana. Gathered 4 Nov 2026.</p>
+      <div class="panel sources"><ul id="srcList" style="margin:0;padding-left:1.1rem;display:flex;flex-direction:column;gap:.4rem"></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CHAT ============ -->
+<section class="view" id="v-chat" hidden>
+  <div class="row between">
+    <h2>Group chat</h2>
+    <button type="button" id="cogBtn" class="iconbtn" aria-label="Chat settings" aria-expanded="false" aria-controls="chatSettings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+  </div>
+  <div class="panel" id="chatSettings" hidden>
+    <h3>Chat settings</h3>
+    <div class="setrow">
+      <div class="avatar xl" id="setAvatar" aria-hidden="true"></div>
+      <div class="plain" style="flex:1;min-width:0">
+        <label for="setName" class="small muted">Your name</label>
+        <div class="compose"><input id="setName" maxlength="24" autocomplete="nickname" placeholder="e.g. Sara"><button type="button" id="setNameSave">Save</button></div>
+      </div>
+    </div>
+    <div class="row">
+      <label class="btn" for="avatarFile">Choose profile picture</label>
+      <input type="file" id="avatarFile" accept="image/*" class="visually-hidden">
+      <button type="button" id="avatarRemove" hidden>Remove picture</button>
+    </div>
+    <p class="small muted">Your name and picture go to the group, encrypted, so they show next to your messages.</p>
+    <hr class="sep">
+    <h3>Chat background</h3>
+    <div class="row">
+      <div class="bgthumb" id="bgThumb" aria-hidden="true"></div>
+      <label class="btn" for="bgFile">Choose background</label>
+      <input type="file" id="bgFile" accept="image/*" class="visually-hidden">
+      <button type="button" id="bgRemove" hidden>Remove</button>
+    </div>
+    <label for="bgOpacity" class="small muted">How visible: <span id="bgOpacityVal"></span></label>
+    <input type="range" id="bgOpacity" min="10" max="80" step="5" value="35">
+    <p class="small muted">The background stays on this phone only.</p>
+    <p class="small" id="setErr" role="alert"></p>
+  </div>
+  <form class="panel" id="lockPanel" hidden>
+    <h3>Unlock the group</h3>
+    <p class="small">Chat messages, pins and the meeting point are encrypted on your phone before they leave it. Everyone in the group types the same passphrase. Agree on it in person, not in a message.</p>
+    <label for="passIn" class="small muted">Group passphrase</label>
+    <input id="passIn" type="password" autocomplete="off" minlength="8" placeholder="At least 8 characters">
+    <div id="pass2Wrap" hidden><label for="pass2In" class="small muted">No passphrase is set for this group yet. Type it again to set it.</label><input id="pass2In" type="password" autocomplete="off"></div>
+    <div class="row"><button class="btn-primary" type="submit" id="unlockBtn">Unlock</button><button type="button" id="showPass">Show</button></div>
+    <p class="small" id="lockErr" role="alert"></p>
+  </form>
+  <div class="lockline" id="lockLine" hidden>
+    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+    <span>End-to-end encrypted</span>
+    <button type="button" id="forgetKey">Lock this phone</button>
+  </div>
+  <div class="chatwrap" id="chatwrap"><div class="chatbg" id="chatbg" aria-hidden="true"></div>
+  <div class="chatbox" id="chatbox" aria-live="polite"><p class="empty" id="chatEmpty">Unlock the group to read messages.</p></div></div>
+  <div class="row" id="quick">
+    <button type="button" class="chip" data-q="Home safe">Home safe</button>
+    <button type="button" class="chip" data-q="On my way back">On my way back</button>
+    <button type="button" class="chip" data-q="At the meeting point">At the meeting point</button>
+    <button type="button" class="chip" data-q="Need help — call me">Need help</button>
+  </div>
+  <form class="compose" id="chatForm">
+    <textarea id="chatIn" maxlength="500" placeholder="Message the group"></textarea>
+    <button class="btn-primary" type="submit" id="sendBtn">Send</button>
+  </form>
+  <p class="small muted" id="chatNote" role="status"></p>
+  <div class="panel">
+    <h3>Sync without internet</h3>
+    <p class="small">Every phone keeps the whole encrypted ledger: chat, pins and meeting point. Messages written without signal wait in an outbox and go out when you're back online. With no internet at all, pass the ledger hand to hand: copy it, send it by AirDrop, Quick Share or Bluetooth, and paste it on the other phone.</p>
+    <div class="row"><button type="button" id="ledgerCopy">Copy my ledger</button><button type="button" id="ledgerPasteBtn">Paste a ledger</button></div>
+    <div id="ledgerPasteWrap" hidden class="plain">
+      <label for="ledgerIn" class="small muted">Paste the text a friend sent you</label>
+      <textarea id="ledgerIn" rows="3" placeholder="GB1:…"></textarea>
+      <div class="row"><button type="button" class="btn-primary" id="ledgerMerge">Merge</button></div>
+    </div>
+    <p class="small muted" id="ledgerNote"></p>
+  </div>
+</section>
+</main>
+
+<nav class="tabs" aria-label="Sections"><div class="tabs-in">
+  <a href="#home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 11 12 4l9 7v9H14v-6h-4v6H3z"/></svg>Home</a>
+  <a href="#map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg>Map</a>
+  <a href="#places"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M7 3v8a2 2 0 0 0 4 0V3M9 11v10M17 3c-2 2-2 6 0 8v10"/></svg>Places</a>
+  <a href="#info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>Info</a>
+  <a href="#chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>Chat</a>
+</div></nav>
+
+<div class="overlay" id="overlay" hidden role="dialog" aria-modal="true" aria-label="Full-screen card">
+  <button type="button" id="ovClose">Close</button>
+  <div class="big" id="ovBig"></div>
+  <div class="sub" id="ovSub"></div>
+  <div class="code" id="ovCode"></div>
+</div>
+<div class="toast" id="toast" hidden></div>
+<div class="sheet" id="confirmSheet" hidden role="alertdialog" aria-modal="true" aria-labelledby="cfTitle">
+  <div class="sheet-in">
+    <h3 id="cfTitle"></h3>
+    <p id="cfBody"></p>
+    <div class="row"><button type="button" class="btn-primary" id="cfOk"></button><button type="button" id="cfCancel">Cancel</button></div>
+  </div>
+</div>
+<form class="sheet" id="nameSheet" hidden>
+  <div class="sheet-in">
+    <h3>What should the group call you?</h3>
+    <label for="nameIn" class="small muted">Shown on your messages, pins and meeting points</label>
+    <input id="nameIn" maxlength="24" placeholder="e.g. Sara" autocomplete="nickname">
+    <div class="row"><button class="btn-primary" type="submit">Save name</button><button type="button" id="nameCancel">Cancel</button></div>
+  </div>
+</form>
+
+<script type="application/octet-stream" id="mapdata">__MAPDATA__</script>
+__LEAFLET_JS__
+<script>
+__APPJS__
+</script>

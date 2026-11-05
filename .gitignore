@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.osm.pbf
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/.idea/
+ios/App/build/
+ios/DerivedData/
+*.apk
+*.ipa
+.DS_Store
+__pycache__/
+*.pyc

@@ -1,0 +1,12 @@
+{
+  "appId": "app.golembasecamp",
+  "appName": "Golem Basecamp",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false,
+    "useLegacyBridge": true
+  },
+  "ios": {
+    "contentInset": "never"
+  }
+}
