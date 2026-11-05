@@ -160,6 +160,17 @@ a{text-underline-offset:.18em}
 .leaflet-tooltip.peerlabel{background:var(--ink);color:var(--bg);border:0;border-radius:6px;padding:2px 7px;font-family:var(--f-body);font-weight:700;font-size:12px;box-shadow:0 1px 4px rgb(0 0 0 / .3)}
 .leaflet-tooltip.peerlabel::before{border-top-color:var(--ink)}
 #confirmSheet{z-index:130}
+/* map faces + cropper */
+.facepin{width:40px;height:40px;border-radius:50%;padding:3px;background:var(--surface);box-shadow:0 2px 8px rgb(0 0 0 / .35);transition:opacity .2s}
+.facepin.me{background:#1d6fd1}
+.facepin.faded{opacity:.5}
+.facepin .avatar{width:34px;height:34px;box-shadow:none;font-size:.95rem}
+.cropstage{position:relative;width:260px;height:260px;max-width:100%;margin:0 auto;overflow:hidden;border-radius:12px;background:#111;touch-action:none;cursor:grab;user-select:none}
+.cropstage:active{cursor:grabbing}
+.cropstage img{position:absolute;left:0;top:0;max-width:none;transform-origin:0 0;pointer-events:none}
+.cropmask{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at center, transparent 109px, rgb(0 0 0 / .6) 110px);}
+.cropmask::after{content:"";position:absolute;left:50%;top:50%;width:218px;height:218px;margin:-109px 0 0 -109px;border-radius:50%;border:2px solid rgb(255 255 255 / .9)}
+#cropSheet{z-index:140}
 /* lock */
 .lockline{display:flex;align-items:center;gap:.4rem;font-size:.84rem;color:var(--green);font-weight:700}
 .lockline button{min-height:32px;padding:.15rem .7rem;font-size:.8rem;margin-left:auto}
@@ -726,6 +737,16 @@ label.btn:focus-within{outline:3px solid var(--sea);outline-offset:2px}
     <h3 id="cfTitle"></h3>
     <p id="cfBody"></p>
     <div class="row"><button type="button" class="btn-primary" id="cfOk"></button><button type="button" id="cfCancel">Cancel</button></div>
+  </div>
+</div>
+<div class="sheet" id="cropSheet" hidden role="dialog" aria-modal="true" aria-labelledby="cropTitle">
+  <div class="sheet-in">
+    <h3 id="cropTitle">Position your picture</h3>
+    <p class="small muted">Drag to move. Pinch, scroll or use the slider to zoom. Only the circle is kept.</p>
+    <div class="cropstage" id="cropStage" tabindex="0" aria-label="Picture position. Arrow keys move, plus and minus zoom."><img id="cropImg" alt="" draggable="false"><div class="cropmask"></div></div>
+    <label for="cropZoom" class="small muted">Zoom</label>
+    <input type="range" id="cropZoom" min="100" max="500" step="1" value="100">
+    <div class="row"><button type="button" class="btn-primary" id="cropSave">Use this picture</button><button type="button" id="cropCancel">Cancel</button></div>
   </div>
 </div>
 <form class="sheet" id="nameSheet" hidden>

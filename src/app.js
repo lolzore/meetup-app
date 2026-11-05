@@ -291,10 +291,10 @@ function renderPeers(){
   if(!map||!peerLayer) return;
   const live=new Set();
   for(const [d,p] of livePeers()){ live.add(d); const stale=Date.now()-p.ts>30*60000; const label=esc(p.name)+(stale?` · ${ago(p.ts)}`:"");
+    const prof=S.profiles[d]||profileFor({name:p.name}), key=(prof&&prof.img?prof.ts:"x")+"|"+p.name+"|"+stale;
     let m=peerMarkers[d];
-    if(!m){ m=L.circleMarker([p.lat,p.lon],{radius:9,color:"#fff",weight:3,fillColor:peerColor(p.name),fillOpacity:1}).bindTooltip(label,{permanent:true,direction:"top",offset:[0,-10],className:"peerlabel"}); m.addTo(peerLayer); peerMarkers[d]=m; }
-    else { m.setLatLng([p.lat,p.lon]); m.setTooltipContent(label); }
-    m.setStyle({fillOpacity:stale?.45:1,opacity:stale?.6:1}); }
+    if(!m){ m=L.marker([p.lat,p.lon],{icon:faceIcon(prof,p.name,stale),zIndexOffset:800,keyboard:false}).bindTooltip(label,{permanent:true,direction:"top",offset:[0,-22],className:"peerlabel"}); m._k=key; m.addTo(peerLayer); peerMarkers[d]=m; }
+    else { m.setLatLng([p.lat,p.lon]); m.setTooltipContent(label); if(m._k!==key){ m.setIcon(faceIcon(prof,p.name,stale)); m._k=key; } } }
   for(const d of Object.keys(peerMarkers)) if(!live.has(d)){ peerLayer.removeLayer(peerMarkers[d]); delete peerMarkers[d]; }
 }
 function renderShare(){
@@ -739,10 +739,15 @@ $("#pinAvoid").onchange=()=>{ $("#pinRadiusWrap").hidden=!$("#pinAvoid").checked
 $("#pinMeet").onclick=async()=>{ if(!draft) return; const label=$("#pinLabel").value.trim(); if(!label){ $("#pinLabel").focus(); return; }
   if(await setMeetup({label,lat:draft.lat,lon:draft.lon})){ closePinForm(); map.setView([S.meetup.lat,S.meetup.lon],Math.max(map.getZoom(),16)); } };
 
-function updateMe(){ if(!map||!lastPos) return; const ll=[lastPos.lat,lastPos.lon], T=tgt();
-  if(!meMarker){ meMarker=L.circleMarker(ll,{radius:8,color:"#fff",weight:3,fillColor:"#1d6fd1",fillOpacity:1}).addTo(map).bindPopup("You"); meLine=L.polyline([ll,[T.lat,T.lon]],{color:"#1d6fd1",weight:3,dashArray:"4 6"}).addTo(map); }
-  else { meMarker.setLatLng(ll); meLine.setLatLngs([ll,[T.lat,T.lon]]); } }
-$("#locBtn").onclick=()=>{ $("#findBtn").click(); const t=setInterval(()=>{ if(lastPos&&map){ clearInterval(t); const T=tgt(); map.fitBounds(L.latLngBounds([[lastPos.lat,lastPos.lon],[T.lat,T.lon]]).pad(.3),{maxZoom:17}); } },500); setTimeout(()=>clearInterval(t),20000);
+function faceIcon(prof, name, faded, me){ const a=avatarEl(prof, name||"?");
+  return L.divIcon({className:"", iconSize:[40,40], iconAnchor:[20,20],
+    html:`<div class="facepin${faded?" faded":""}${me?" me":""}"><div class="avatar" style="${esc(a.style.cssText)}">${esc(a.textContent)}</div></div>`}); }
+function updateMe(){ if(!map||!lastPos) return; const ll=[lastPos.lat,lastPos.lon], T=tgt(); const key=(myImg||"")+"|"+myName;
+  if(!meMarker){ meMarker=L.marker(ll,{icon:faceIcon({img:myImg},myName||"Me",false,true),zIndexOffset:900,keyboard:false}).addTo(map).bindPopup("You"); meMarker._k=key; }
+  else { meMarker.setLatLng(ll); if(meMarker._k!==key){ meMarker.setIcon(faceIcon({img:myImg},myName||"Me",false,true)); meMarker._k=key; } }
+  if(T){ if(!meLine) meLine=L.polyline([ll,[T.lat,T.lon]],{color:"#1d6fd1",weight:3,dashArray:"4 6",interactive:false}).addTo(map); else meLine.setLatLngs([ll,[T.lat,T.lon]]); }
+  else if(meLine){ map.removeLayer(meLine); meLine=null; } }
+$("#locBtn").onclick=()=>{ $("#findBtn").click(); const t=setInterval(()=>{ if(lastPos&&map){ clearInterval(t); const T=tgt(); if(T) map.fitBounds(L.latLngBounds([[lastPos.lat,lastPos.lon],[T.lat,T.lon]]).pad(.3),{maxZoom:17}); else map.setView([lastPos.lat,lastPos.lon],17); } },500); setTimeout(()=>clearInterval(t),20000);
   if(MODE==="artifact") setTimeout(()=>{ if(!lastPos){ const tip=$("#maptip"); tip.hidden=false; tip.textContent="Location is blocked in the online page. Use the offline copy or Organic Maps for a live position."; } },3000); };
 if(MODE==="file"){ const tb=$("#tileBtn"); tb.hidden=false; tb.onclick=()=>{ initMap(); if(!map) return; if(tiles){ map.removeLayer(tiles); tiles=null; tb.setAttribute("aria-pressed","false"); } else { tiles=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(map); tiles.bringToBack(); tb.setAttribute("aria-pressed","true"); } }; }
 
@@ -768,8 +773,39 @@ function applyBg(){ const bg=store.get("chatbg",null)||sessionBg, op=store.get("
 let sessionBg=null;
 $("#cogBtn").onclick=()=>{ const p=$("#chatSettings"); p.hidden=!p.hidden; $("#cogBtn").setAttribute("aria-expanded",String(!p.hidden)); if(!p.hidden){ $("#setErr").textContent=""; renderSettings(); } };
 $("#setNameSave").onclick=async()=>{ const n=$("#setName").value.trim().slice(0,24); if(!n){ $("#setName").focus(); return; } myName=n; store.set("name",n); renderAll(); renderSettings(); await publishProfile(); toast("You're "+n); };
+/* profile picture cropper: drag to move, pinch / wheel / slider to zoom; the circle shows exactly what is kept */
+const CROP={img:null,scale:1,min:1,x:0,y:0,ptrs:new Map(),pinch:null,done:null};
+const VIEW=260, OUT=192;
+function cropClamp(){ const w=CROP.img.naturalWidth*CROP.scale, h=CROP.img.naturalHeight*CROP.scale, r=VIEW*0.42;
+  // keep the circle (centred, radius r) covered by the picture
+  CROP.x=Math.min(VIEW/2-r, Math.max(VIEW/2+r-w, CROP.x)); CROP.y=Math.min(VIEW/2-r, Math.max(VIEW/2+r-h, CROP.y)); }
+function cropDraw(){ cropClamp(); const im=$("#cropImg"); im.style.width=CROP.img.naturalWidth*CROP.scale+"px"; im.style.transform=`translate(${CROP.x}px,${CROP.y}px)`;
+  $("#cropZoom").value=String(Math.round(CROP.scale/CROP.min*100)); }
+function cropZoomTo(sc, cx=VIEW/2, cy=VIEW/2){ sc=Math.min(CROP.min*5, Math.max(CROP.min, sc)); const k=sc/CROP.scale;
+  CROP.x=cx-(cx-CROP.x)*k; CROP.y=cy-(cy-CROP.y)*k; CROP.scale=sc; cropDraw(); }
+async function openCropper(file){ const img=await loadImage(file); CROP.img=img; const r=VIEW*0.42;
+  CROP.min=(2*r)/Math.min(img.naturalWidth,img.naturalHeight); CROP.scale=CROP.min;
+  CROP.x=VIEW/2-img.naturalWidth*CROP.scale/2; CROP.y=VIEW/2-img.naturalHeight*CROP.scale/2;
+  const el=$("#cropImg"); el.src=img.src; $("#cropSheet").hidden=false; cropDraw(); $("#cropSave").focus();
+  return new Promise(res=>CROP.done=res); }
+function cropResult(){ const r=VIEW*0.42, c=document.createElement("canvas"); c.width=c.height=OUT; const k=OUT/(2*r);
+  const g=c.getContext("2d"); g.imageSmoothingQuality="high";
+  g.drawImage(CROP.img, (VIEW/2-r-CROP.x)/CROP.scale, (VIEW/2-r-CROP.y)/CROP.scale, 2*r/CROP.scale, 2*r/CROP.scale, 0, 0, OUT, OUT);
+  return c.toDataURL("image/jpeg",0.84); }
+(()=>{ const st=$("#cropStage");
+  st.addEventListener("pointerdown",e=>{ st.setPointerCapture(e.pointerId); CROP.ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(CROP.ptrs.size===2){ const [a,b]=[...CROP.ptrs.values()]; CROP.pinch={d:Math.hypot(a.x-b.x,a.y-b.y),s:CROP.scale}; } });
+  st.addEventListener("pointermove",e=>{ const p=CROP.ptrs.get(e.pointerId); if(!p||!CROP.img) return; const dx=e.clientX-p.x, dy=e.clientY-p.y; p.x=e.clientX; p.y=e.clientY;
+    if(CROP.ptrs.size===1){ CROP.x+=dx; CROP.y+=dy; cropDraw(); }
+    else if(CROP.pinch){ const [a,b]=[...CROP.ptrs.values()], rect=st.getBoundingClientRect(); cropZoomTo(CROP.pinch.s*Math.hypot(a.x-b.x,a.y-b.y)/CROP.pinch.d, (a.x+b.x)/2-rect.left, (a.y+b.y)/2-rect.top); } });
+  const up=e=>{ CROP.ptrs.delete(e.pointerId); if(CROP.ptrs.size<2) CROP.pinch=null; }; st.addEventListener("pointerup",up); st.addEventListener("pointercancel",up);
+  st.addEventListener("wheel",e=>{ e.preventDefault(); const rect=st.getBoundingClientRect(); cropZoomTo(CROP.scale*(e.deltaY<0?1.1:1/1.1), e.clientX-rect.left, e.clientY-rect.top); },{passive:false});
+  st.addEventListener("keydown",e=>{ const m={ArrowLeft:[8,0],ArrowRight:[-8,0],ArrowUp:[0,8],ArrowDown:[0,-8]}[e.key]; if(m){ e.preventDefault(); CROP.x+=m[0]; CROP.y+=m[1]; cropDraw(); } if(e.key==="+"||e.key==="=") cropZoomTo(CROP.scale*1.1); if(e.key==="-") cropZoomTo(CROP.scale/1.1); });
+  $("#cropZoom").oninput=e=>cropZoomTo(CROP.min*(+e.target.value)/100);
+  const close=v=>{ $("#cropSheet").hidden=true; const d=CROP.done; CROP.done=null; if(d) d(v); };
+  $("#cropSave").onclick=()=>close(cropResult()); $("#cropCancel").onclick=()=>close(null);
+})();
 $("#avatarFile").onchange=async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return; $("#setErr").textContent="";
-  try{ myImg=await squareAvatar(f); store.set("avatar",myImg); renderSettings(); renderMessages(); if(!myName) await ensureName(); if(KEY) await publishProfile(); else $("#setErr").textContent="Saved on this phone. It goes to the group once you unlock."; toast("Profile picture set"); }
+  try{ const out=await openCropper(f); if(!out) return; myImg=out; store.set("avatar",myImg); renderSettings(); renderMessages(); if(!myName) await ensureName(); if(KEY) await publishProfile(); else $("#setErr").textContent="Saved on this phone. It goes to the group once you unlock."; toast("Profile picture set"); }
   catch(err){ $("#setErr").textContent="That file couldn't be read as a picture. Try a JPEG or PNG."; } };
 $("#avatarRemove").onclick=async()=>{ myImg=null; store.set("avatar",null); renderSettings(); await publishProfile(); renderMessages(); toast("Picture removed"); };
 $("#bgFile").onchange=async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return; $("#setErr").textContent="";
@@ -842,7 +878,7 @@ $("#ledgerMerge").onclick=async()=>{
   $("#ledgerIn").value=""; $("#ledgerPasteWrap").hidden=true;
 };
 
-function renderAll(){ renderHome(); drawHome(); renderMeet(); renderMessages(); renderChatNote(); if(pArea==="pins") renderPlaces(); drawPins(); paintArrow(); updateMe(); }
+function renderAll(){ renderHome(); drawHome(); renderMeet(); renderMessages(); renderChatNote(); if(pArea==="pins") renderPlaces(); drawPins(); paintArrow(); updateMe(); if(typeof renderPeers==="function") renderPeers(); }
 
 /* ================= boot ================= */
 renderCatChips(); renderPlaces(); route();
