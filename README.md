@@ -1,13 +1,13 @@
 # meetup-app
 
-**Golem Basecamp**: the trip app inside this project.
+**Albania Meetup Map&Chat**: the trip app inside this project.
 
 Offline trip companion for the Albanian coast around Golem and Durrës, plus Tirana. One codebase builds three things:
 
 | Build | Where it comes from | Who it's for |
 |---|---|---|
-| **Android app** (`golem-basecamp.apk`) | `build-android.bat` on Windows, or the *Android APK* GitHub Action | Android phones (sideload) |
-| **iPhone app** (`golem-basecamp.ipa`, unsigned) | The *iPhone IPA* GitHub Action (runs on GitHub's Macs) | iPhones, installed with AltStore / SideStore / Sideloadly |
+| **Android app** (`albania-meetup.apk`) | `build-android.bat` on Windows, or the *Android APK* GitHub Action | Android phones (sideload) |
+| **iPhone app** (`albania-meetup.ipa`, unsigned) | The *iPhone IPA* GitHub Action (runs on GitHub's Macs) | iPhones, installed with AltStore / SideStore / Sideloadly |
 | **Website** | The *Website (GitHub Pages)* GitHub Action | Anyone who doesn't want to install an app. "Add to Home Screen" keeps it offline |
 
 ## What's in it
@@ -20,7 +20,7 @@ Offline trip companion for the Albanian coast around Golem and Durrës, plus Tir
 
 ## Privacy: where you're staying is not in this repo
 
-The address and coordinates of the accommodation are deliberately **not** part of the code. After installing, someone unlocks the group and fills in **Home → Where are we staying?** once. It is saved encrypted and every phone that unlocks with the passphrase receives it. For a private offline copy with the address built in, run `GB_TRIP_FILE=path/to/trip.json python3 scripts/build.py` and use `dist/golem-basecamp.html`. Keep that file out of git.
+The address and coordinates of the accommodation are deliberately **not** part of the code. After installing, someone unlocks the group and fills in **Home → Where are we staying?** once. It is saved encrypted and every phone that unlocks with the passphrase receives it. For a private offline copy with the address built in, run `GB_TRIP_FILE=path/to/trip.json python3 scripts/build.py` and use `dist/albania-meetup.html`. Keep that file out of git.
 
 ## Sync, encryption and location
 
@@ -38,14 +38,14 @@ The address and coordinates of the accommodation are deliberately **not** part o
 Needs Node.js 22+, Python 3, and Android Studio (for the Android SDK and Java 21).
 
 1. Double-click `build-android.bat`.
-2. Wait for `golem-basecamp.apk` to appear in this folder.
+2. Wait for `albania-meetup.apk` to appear in this folder.
 3. Send the APK to the Android phones. Opening it installs it, after allowing "Install unknown apps" for the app you opened it from.
 
 Alternative: run `npm install`, `python scripts/build.py` and `npx cap sync android`, then open the `android` folder in Android Studio and choose **Build → Build App Bundle(s) / APK(s) → Build APK(s)**.
 
 ## Build the iPhone app
 
-Push this repo to GitHub. The **iPhone IPA** action builds `golem-basecamp.ipa` and attaches it to the run (Actions tab → latest run → Artifacts). Then on Windows:
+Push this repo to GitHub. The **iPhone IPA** action builds `albania-meetup.ipa` and attaches it to the run (Actions tab → latest run → Artifacts). Then on Windows:
 
 - **Sideloadly:** plug in the iPhone, drop in the .ipa, and sign in with that person's Apple ID. Free Apple IDs expire apps after **7 days**.
 - **SideStore:** after a one-time setup on a computer, the iPhone re-signs the app by itself, which matters for a trip longer than a week.

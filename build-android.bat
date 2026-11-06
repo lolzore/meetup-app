@@ -15,9 +15,9 @@ if "%JAVA_HOME%"=="" if exist "%ProgramFiles%\Android\Android Studio\jbr" set "J
 cd android
 call gradlew.bat assembleDebug || goto :fail
 cd ..
-copy /y android\app\build\outputs\apk\debug\app-debug.apk golem-basecamp.apk >nul
+copy /y android\app\build\outputs\apk\debug\app-debug.apk albania-meetup.apk >nul
 echo.
-echo Done: golem-basecamp.apk is in this folder. Send it to Android phones and open it to install.
+echo Done: albania-meetup.apk is in this folder. Send it to Android phones and open it to install.
 pause
 exit /b 0
 :fail

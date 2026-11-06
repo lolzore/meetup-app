@@ -1,4 +1,4 @@
-<title>Golem Basecamp</title>
+<title>Albania Meetup Map&amp;Chat</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#0f5566">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -50,7 +50,7 @@ input,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1p
 /* header */
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--sea);color:var(--sea-ink);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:.55rem}
 .top-in{display:flex;align-items:center;justify-content:space-between;gap:.75rem;max-width:760px;margin:0 auto}
-.brand{font-family:var(--f-display);font-weight:800;font-size:1.55rem;letter-spacing:.03em;text-transform:uppercase}
+.brand{font-family:var(--f-display);font-weight:800;font-size:clamp(.9rem,4.3vw,1.45rem);letter-spacing:.02em;text-transform:uppercase;line-height:1.15;min-width:0}
 .brand span{opacity:.75;font-weight:700}
 .net{font-family:var(--f-mono);font-size:.72rem;padding:.2rem .55rem;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
 
@@ -164,6 +164,9 @@ a{text-underline-offset:.18em}
 .facepin{width:40px;height:40px;border-radius:50%;padding:3px;background:var(--surface);box-shadow:0 2px 8px rgb(0 0 0 / .35);transition:opacity .2s}
 .facepin.me{background:#1d6fd1}
 .facepin.faded{opacity:.5}
+.poi{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:2px solid #fff;box-sizing:border-box;box-shadow:0 1px 4px rgb(0 0 0 / .4);cursor:pointer}
+.poi.small{width:24px;height:24px}
+.poi svg{display:block}
 .facepin .avatar{width:34px;height:34px;box-shadow:none;font-size:.95rem}
 .cropstage{position:relative;width:260px;height:260px;max-width:100%;margin:0 auto;overflow:hidden;border-radius:12px;background:#111;touch-action:none;cursor:grab;user-select:none}
 .cropstage:active{cursor:grabbing}
@@ -195,6 +198,8 @@ a{text-underline-offset:.18em}
 .chip{flex:none;min-height:38px;padding:.35rem .85rem;font-size:.88rem;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-weight:700}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .chip i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:.2rem;vertical-align:middle}
+.chip i.cdot{width:18px;height:18px;display:inline-grid;place-items:center;margin-right:.3rem;margin-left:-.2rem}
+.chip i.cdot svg{display:block}
 
 /* places */
 .list{display:flex;flex-direction:column;gap:.6rem}
@@ -294,7 +299,7 @@ label.btn:focus-within{outline:3px solid var(--sea);outline-offset:2px}
 </style>
 
 <header class="top"><div class="top-in">
-  <div class="brand">Golem <span>Basecamp</span></div>
+  <div class="brand">Albania Meetup <span>Map&amp;Chat</span></div>
   <div class="net" id="net">checking…</div>
 </div></header>
 
@@ -618,7 +623,7 @@ label.btn:focus-within{outline:3px solid var(--sea);outline-offset:2px}
           <li><b>Google Maps:</b> download an offline area covering Golem and Durrës, and save the home address as a starred place.</li>
           <li><b>Screenshot the taxi card</b> (Home → Show to driver). It works with no battery-hungry apps.</li>
           <li><b>This page:</b> once loaded it keeps working in an open tab with no signal. Don't close or refresh the tab while offline.</li>
-          <li id="fileTip"><b>Fully offline copy:</b> <span class="mono">golem-basecamp.html</span>, shared in the group. On Android, save it and open it in Chrome; it then works with no internet at all, including the GPS arrow. On iPhone, keep this online page open in a Safari tab instead.</li>
+          <li id="fileTip"><b>Fully offline copy:</b> <span class="mono">albania-meetup.html</span>, shared in the group. On Android, save it and open it in Chrome; it then works with no internet at all, including the GPS arrow. On iPhone, keep this online page open in a Safari tab instead.</li>
         </ul>
         <p class="small muted">The live group chat needs internet; everything else in this app is built in. Without signal, messages wait in the outbox, and you can pass the ledger between phones (Chat tab).</p>
       </div>

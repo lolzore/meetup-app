@@ -7,13 +7,13 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>When you turn on location sharing, Golem Basecamp keeps sending your position to the group while your phone is locked, until you turn it off.</string>
+	<string>When you turn on location sharing, Albania Meetup Map&amp;Chat keeps sending your position to the group while your phone is locked, until you turn it off.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Golem Basecamp uses your location for the compass home, and to show your dot to the group when you turn on location sharing.</string>
+	<string>Albania Meetup Map&amp;Chat uses your location for the compass home, and to show your dot to the group when you turn on location sharing.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>You can take a photo to use as your profile picture or chat background.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
@@ -21,7 +21,7 @@
 	<key>NSMotionUsageDescription</key>
 	<string>The compass uses the phone's motion sensors to point the way home.</string>
 	<key>CFBundleDisplayName</key>
-        <string>Basecamp</string>
+        <string>Map&amp;Chat</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

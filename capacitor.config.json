@@ -1,6 +1,6 @@
 {
   "appId": "app.golembasecamp",
-  "appName": "Golem Basecamp",
+  "appName": "Albania Meetup Map&Chat",
   "webDir": "www",
   "android": {
     "allowMixedContent": false,

@@ -1,6 +1,6 @@
 {
-  "name": "Golem Basecamp",
-  "short_name": "Basecamp",
+  "name": "Albania Meetup Map&Chat",
+  "short_name": "Map&Chat",
   "description": "Offline trip companion: map of Albania, places, encrypted group chat and live location.",
   "start_url": "./",
   "scope": "./",

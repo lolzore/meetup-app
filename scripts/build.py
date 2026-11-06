@@ -1,4 +1,4 @@
-"""Build every version of Golem Basecamp from one source.
+"""Build every version of Albania Meetup Map&Chat from one source.
 
   python3 scripts/build.py            -> www/ (Android + iPhone apps), web/ (website), dist/ (private page, offline file, pins)
 
@@ -33,7 +33,7 @@ def data_for(mode):
 HEAD_EXTRA = {
   "web": '<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png">'
          '<link rel="icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes">'
-         '<meta name="apple-mobile-web-app-title" content="Basecamp"><meta name="mobile-web-app-capable" content="yes">',
+         '<meta name="apple-mobile-web-app-title" content="Map&amp;Chat"><meta name="mobile-web-app-capable" content="yes">',
   "app": "", "file": "",
 }
 SW_REG = ('<script>if("serviceWorker" in navigator) addEventListener("load",()=>navigator.serviceWorker'
@@ -70,14 +70,14 @@ def kml():
         if p.get("lat") is None: continue
         bits = [b for b in [p.get("rating") and f'TripAdvisor {p["rating"]} ({p["reviews"]} reviews)', p.get("price"), p.get("hours"), p.get("note")] if b]
         pms.append(pm(("AVOID: " if p["cat"] in ("avoid", "protest") else "") + p["name"], " · ".join(bits), p["lat"], p["lon"], p["cat"]))
-    return ('<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Golem Basecamp</name>'
+    return ('<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Albania Meetup Map&amp;Chat</name>'
             + st + "".join(pms) + "</Document></kml>")
 
 if __name__ == "__main__":
     wr("www/index.html", build("app"))
     wr("web/index.html", build("web"))
     wr("dist/index.html", build("artifact"))
-    wr("dist/golem-basecamp.html", build("file"))
+    wr("dist/albania-meetup.html", build("file"))
     wr("dist/golem-pins.kml", kml())
     for f in ("manifest.webmanifest", "sw.js", "icon-180.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png"):
         src = os.path.join(ROOT, "assets", "web", f)
