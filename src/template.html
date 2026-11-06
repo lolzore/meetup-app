@@ -284,7 +284,17 @@ label.btn:focus-within{outline:3px solid var(--sea);outline-offset:2px}
 .msg .who{font-size:.75rem;font-weight:700;opacity:.8;display:flex;gap:.5rem}
 .msg .txt{white-space:pre-wrap;word-break:break-word}
 .msg.status .txt{font-weight:700}
-.compose{display:grid;grid-template-columns:1fr auto;gap:.5rem}
+.compose{display:flex;gap:.5rem;align-items:flex-end}
+.compose textarea{flex:1;min-width:0}
+.compose .iconbtn{flex:none;height:48px;width:48px}
+.msg .photo{display:block;width:min(240px,62vw);max-width:100%;height:auto;border-radius:8px;margin:.3rem 0 .15rem;background:color-mix(in srgb,currentColor 12%,transparent);object-fit:cover;cursor:zoom-in}
+.msg .photo-ph{display:grid;place-items:center;text-align:center;padding:.6rem;font-size:.8rem;opacity:.85;cursor:default}
+.photoprev{display:block;max-width:100%;max-height:46vh;margin:.4rem auto;border-radius:10px}
+.photoview{position:fixed;inset:0;z-index:130;background:rgb(0 0 0 / .94);display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 56px) 8px calc(env(safe-area-inset-bottom,0px) + 56px)}
+.photoview img{max-width:100%;max-height:100%;object-fit:contain;touch-action:pinch-zoom}
+.photoview .pvbar{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 10px);display:flex;justify-content:space-between;align-items:center;gap:.5rem;padding:0 12px;color:#fff}
+.photoview .pvbar button,.photoview .pvbar a{background:#fff;color:#111;border-color:#fff}
+.photoview .pvcap{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);color:#fff;text-align:center;padding:0 16px;white-space:pre-wrap}
 .compose textarea{resize:none;height:48px}
 .empty{color:var(--muted);text-align:center;margin:auto;padding:1rem;max-width:30ch}
 
@@ -704,6 +714,8 @@ label.btn:focus-within{outline:3px solid var(--sea);outline-offset:2px}
     <button type="button" class="chip" data-q="Need help — call me">Need help</button>
   </div>
   <form class="compose" id="chatForm">
+    <button type="button" id="photoBtn" class="iconbtn" aria-label="Send a photo" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="m21 15.5-4.8-4.8L7 19.5"/></svg></button>
+    <input type="file" id="photoFile" accept="image/*" hidden>
     <textarea id="chatIn" maxlength="500" placeholder="Message the group"></textarea>
     <button class="btn-primary" type="submit" id="sendBtn">Send</button>
   </form>
@@ -753,6 +765,21 @@ label.btn:focus-within{outline:3px solid var(--sea);outline-offset:2px}
     <input type="range" id="cropZoom" min="100" max="500" step="1" value="100">
     <div class="row"><button type="button" class="btn-primary" id="cropSave">Use this picture</button><button type="button" id="cropCancel">Cancel</button></div>
   </div>
+</div>
+<form class="sheet" id="photoSheet" hidden role="dialog" aria-modal="true" aria-labelledby="photoTitle">
+  <div class="sheet-in">
+    <h3 id="photoTitle">Send a photo</h3>
+    <img id="photoPrev" class="photoprev" alt="Preview of the photo">
+    <p class="small muted" id="photoInfo"></p>
+    <label for="photoCap" class="small muted">Caption (optional)</label>
+    <input id="photoCap" maxlength="300" autocomplete="off">
+    <div class="row"><button type="submit" class="btn-primary" id="photoSend">Send photo</button><button type="button" id="photoCancel">Cancel</button></div>
+  </div>
+</form>
+<div class="photoview" id="photoView" hidden role="dialog" aria-modal="true" aria-label="Photo">
+  <div class="pvbar"><span class="small" id="pvWho"></span><span class="row" style="margin:0"><a class="btn" id="pvSave" download>Save</a><button type="button" id="pvClose">Close</button></span></div>
+  <img id="pvImg" alt="">
+  <div class="pvcap" id="pvCap"></div>
 </div>
 <form class="sheet" id="nameSheet" hidden>
   <div class="sheet-in">

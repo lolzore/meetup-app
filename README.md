@@ -16,7 +16,7 @@ Offline trip companion for the Albanian coast around Golem and Durrës, plus Tir
 - **Map:** the whole of Albania offline (every road, town, river and lake from OpenStreetMap, 3 Nov 2026), places, protest zones, your own pins, friends' location dots.
 - **Places:** rated restaurants, cheap eats, cafés and bars, exchange offices, ATMs, buses, pharmacies, an avoid list, and the group's pins.
 - **Info:** getting around, money and exchange, safety and the avoid list, phrasebook, offline tips, sources.
-- **Chat:** end-to-end encrypted group chat.
+- **Chat:** end-to-end encrypted group chat. Photos too: each one is shrunk on the phone to a WebP (or JPEG on phones that can't make WebP, such as iPhones) of at most ~180 KB, with location and camera details removed, then encrypted.
 
 ## Privacy: where you're staying is not in this repo
 
@@ -27,6 +27,7 @@ The address and coordinates of the accommodation are deliberately **not** part o
 - Everyone types the same **group passphrase**. It never leaves the phone. It derives an AES-256 key (PBKDF2, 310k rounds) and a random-looking group ID.
 - Chat, pins, the meeting point and location dots travel through two free public MQTT relays (`broker.hivemq.com`, `broker.emqx.io`) as **encrypted** retained messages. The relays only see scrambled data and message times.
 - **Each phone keeps the whole ledger.** Messages written without signal wait in an outbox. On every reconnect a phone receives what it missed and republishes anything the relay lacks. "Copy / Paste ledger" in Chat moves it between phones by AirDrop, Quick Share or Bluetooth with no internet at all.
+- **Photos** travel separately from the ledger, encrypted and split into chunks on their own relay topics. A phone downloads a photo only when it shows it, so reconnecting never re-downloads them all. If the relay has lost one, the phone asks the group and any phone that has it sends it again. Photos are not part of the copy/paste ledger.
 - **Avoid areas:** long-press the map and tick "Area to avoid" to warn the group about a protest or trouble spot for 12 hours. The built-in protest zones are static (as of 3 Nov 2026); Info → Safety links the sources that announce new protests.
 - **Live location** is off by default. Friends see a dot with your name. In the **apps** it keeps updating with the app closed or the phone locked until you turn it off (Android shows a notification while it's on); background updates go out through the phone's native networking to [ntfy.sh](https://ntfy.sh), another free public relay, sealed with the group key. On the **website** it only updates while the page is open.
   - It turns itself off after **more than an hour outside Albania**.

@@ -85,7 +85,7 @@ let db=null, flushing=false, subs=false;
 function canSync(){ return RELAY ? relayOnline() : (MODE==="artifact" && db && navigator.onLine); }
 async function flush(){
   if(RELAY){ if(relayOnline() && OUTBOX.size){ for(const key of [...OUTBOX]){ const doc=LEDGER[key]; if(doc) relayPub("d/"+key,{v:1,iv:doc.iv,ct:doc.ct,ts:doc.ts}); OUTBOX.delete(key); } store.set("outbox",[...OUTBOX]); }
-    renderChatNote(); renderMessages(); return; }
+    flushImages(); renderChatNote(); renderMessages(); return; }
   if(!canSync()||flushing||!OUTBOX.size) { renderChatNote(); return; }
   flushing=true;
   try{
@@ -150,7 +150,7 @@ function relayConnect(){
   for(const url of (window.GB_BROKERS||BROKERS)){
     const c=mqtt.connect(url,{clientId:"gb"+DEVICE.replace(/[^a-z0-9]/g,"").slice(-10)+Math.random().toString(36).slice(2,6),keepalive:30,reconnectPeriod:5000,connectTimeout:12000,clean:true,protocolVersion:4});
     c._seen={};
-    c.on("connect",()=>{ c._seen={}; c.subscribe([T()+"/d/#",T()+"/loc/+"],{qos:1},()=>{ c._subAt=Date.now(); clearTimeout(c._ae); c._ae=setTimeout(()=>antiEntropy(c),3500); }); renderChatNote(); if(SHARE.on) SHARE.last=0; });
+    c.on("connect",()=>{ c._seen={}; c.subscribe([T()+"/d/#",T()+"/loc/+",T()+"/want/+"],{qos:1},()=>{ c._subAt=Date.now(); clearTimeout(c._ae); c._ae=setTimeout(()=>antiEntropy(c),3500); photosReconnected(); }); renderChatNote(); if(SHARE.on) SHARE.last=0; });
     c.on("close",()=>renderChatNote());
     c.on("error",()=>{});
     c.on("message",(topic,payload)=>onRelay(c,topic,payload));
@@ -160,12 +160,14 @@ function relayConnect(){
 }
 function antiEntropy(c){ if(!c.connected) return;
   for(const [key,doc] of Object.entries(LEDGER)) if((c._seen[key]||0) < doc.ts) c.publish(T()+"/d/"+key, JSON.stringify({v:1,iv:doc.iv,ct:doc.ct,ts:doc.ts}), {qos:1,retain:true});
-  OUTBOX.clear(); store.set("outbox",[]); renderChatNote(); renderMessages();
+  OUTBOX.clear(); store.set("outbox",[]); flushImages(); renderChatNote(); renderMessages();
   if(SHARE.on && SHARE.lastPub) relayPub("loc/"+DEVICE, SHARE.lastPub);
 }
 function onRelay(c, topic, payload){
   const rest=topic.slice(T().length+1); const txt=payload && payload.length ? new TextDecoder().decode(payload) : "";
   if(rest.startsWith("loc/")){ onPeer(rest.slice(4), txt); return; }
+  if(rest.startsWith("img/")){ onImageChunk(c, rest.slice(4), txt); return; }
+  if(rest.startsWith("want/")){ onImageWant(rest.slice(5)); return; }
   if(!rest.startsWith("d/") || !txt) return;
   const key=rest.slice(2); if(!/^(messages|pins|meta|profiles)\/[A-Za-z0-9._:-]{1,60}$/.test(key)) return;
   let doc; try{ doc=JSON.parse(txt); }catch(e){ return; }
@@ -852,6 +854,105 @@ $("#bgFile").onchange=async e=>{ const f=e.target.files[0]; e.target.value=""; i
 $("#bgRemove").onclick=()=>{ store.set("chatbg",null); sessionBg=null; renderSettings(); };
 $("#bgOpacity").oninput=e=>{ store.set("chatbgop",+e.target.value); $("#bgOpacityVal").textContent=e.target.value+"%"; applyBg(); };
 
+/* ================= photos in the chat (apps and website) =================
+   A photo is re-encoded on the phone (WebP where the phone can make it, JPEG otherwise) and sized to stay under ~180 KB,
+   which also strips location and camera details. The bytes are encrypted with the group key (AES-GCM, bound to the photo's id)
+   and kept in IndexedDB. The chat message only carries the photo's id; the encrypted photo travels on its own relay topics,
+   split into chunks, so reconnecting never re-downloads every photo: a phone fetches a photo only when it shows it.
+   If the relay has lost a photo, the phone asks the group ("want"), and anyone who has it sends it again. */
+const PHOTO_OK = RELAY && HAS_CRYPTO && !!window.indexedDB;
+const PHOTO_MAX = 180*1024, CHUNK = 48000, IDRE = /^[A-Za-z0-9._:-]{1,60}$/;
+const IMG_OUT = new Set(store.get("imgout",[]));
+const IMG_URL = new Map(), IMG_FETCH = new Map(), IMG_SERVED = new Map();
+const saveImgOut = () => store.set("imgout",[...IMG_OUT]);
+const IMGDB = { db:null,
+  open(){ return this.db ||= new Promise((res,rej)=>{ const r=indexedDB.open("gb-photos",1); r.onupgradeneeded=()=>r.result.createObjectStore("img"); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); },
+  async get(id){ try{ const d=await this.open(); return await new Promise(res=>{ const q=d.transaction("img").objectStore("img").get(id); q.onsuccess=()=>res(q.result||null); q.onerror=()=>res(null); }); }catch(e){ return null; } },
+  async put(id,v){ try{ const d=await this.open(); return await new Promise(res=>{ const t=d.transaction("img","readwrite"); t.objectStore("img").put(v,id); t.oncomplete=()=>res(true); t.onerror=()=>res(false); }); }catch(e){ return false; } } };
+let WEBP_ENC=null;
+function canWebp(){ if(WEBP_ENC===null){ try{ const c=document.createElement("canvas"); c.width=c.height=2; WEBP_ENC=c.toDataURL("image/webp").startsWith("data:image/webp"); }catch(e){ WEBP_ENC=false; } } return WEBP_ENC; }
+async function encodePhoto(file){
+  const img=await loadImage(file), W=img.naturalWidth, Hh=img.naturalHeight; if(!W||!Hh) throw new Error("empty");
+  const type=canWebp()?"image/webp":"image/jpeg"; let best=null;
+  for(const [edge,q] of [[1600,.8],[1600,.68],[1280,.7],[1280,.58],[1024,.6],[800,.55],[640,.5]]){
+    const k=Math.min(1,edge/Math.max(W,Hh)), c=document.createElement("canvas"); c.width=Math.max(1,Math.round(W*k)); c.height=Math.max(1,Math.round(Hh*k));
+    const g=c.getContext("2d"); g.imageSmoothingQuality="high"; if(type==="image/jpeg"){ g.fillStyle="#fff"; g.fillRect(0,0,c.width,c.height); } g.drawImage(img,0,0,c.width,c.height);
+    const blob=await new Promise(r=>c.toBlob(r,type,q)); if(!blob) continue;
+    if(!best||blob.size<best.blob.size) best={blob,w:c.width,h:c.height,type:blob.type};
+    if(blob.size<=PHOTO_MAX) break; }
+  if(!best) throw new Error("encode"); return best; }
+const aad = id => enc.encode("photo/"+id);
+async function openPhoto(id, doc, type){ try{ const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(doc.iv),additionalData:aad(id)},KEY,unb64(doc.ct));
+  return new Blob([pt],{type:/^image\/(webp|jpeg|png)$/.test(type||"")?type:"image/jpeg"}); }catch(e){ return null; } }
+function pubImage(c, id, doc){ const n=Math.ceil(doc.ct.length/CHUNK);
+  for(let i=0;i<n;i++) c.publish(`${T()}/img/${id}/${i}`, JSON.stringify({v:1,n,iv:doc.iv,ts:doc.ts,d:doc.ct.slice(i*CHUNK,(i+1)*CHUNK)}), {qos:1,retain:true}); }
+async function flushImages(){ if(!RELAY||!relayOnline()||!IMG_OUT.size) return;
+  for(const id of [...IMG_OUT]){ const doc=await IMGDB.get(id); if(doc) for(const c of clients) if(c.connected) pubImage(c,id,doc); IMG_OUT.delete(id); }
+  saveImgOut(); renderMessages(); }
+function requestImage(id, force){ if(!RELAY||!KEY||!IDRE.test(id)||!relayOnline()) return;
+  const old=IMG_FETCH.get(id); if(old && (old.busy || (!force && old.failedAt && Date.now()-old.failedAt<60000))) return;
+  const f={parts:{},n:0,busy:true}; IMG_FETCH.set(id,f);
+  for(const c of clients) if(c.connected) c.subscribe(`${T()}/img/${id}/+`,{qos:1});
+  f.t1=setTimeout(()=>{ if(!f.busy) return; for(const c of clients) if(c.connected) c.publish(`${T()}/want/${id}`,"1",{qos:0,retain:false});
+    f.t2=setTimeout(()=>{ if(!f.busy) return; f.busy=false; f.failedAt=Date.now(); unsubImage(id); updatePhotoEls(id); },20000); },6000); }
+function unsubImage(id){ for(const c of clients) if(c.connected) c.unsubscribe(`${T()}/img/${id}/+`); }
+async function onImageChunk(c, rest, txt){ const [id,iStr]=rest.split("/"); const f=IMG_FETCH.get(id); if(!f||!f.busy||!txt||!IDRE.test(id||"")) return;
+  let ch; try{ ch=JSON.parse(txt); }catch(e){ return; } const i=+iStr;
+  if(!ch||typeof ch.d!=="string"||typeof ch.iv!=="string"||!(ch.n>0&&ch.n<=12)||!(i>=0&&i<ch.n)) return;
+  if(f.iv && f.iv!==ch.iv){ if((ch.ts||0)<=(f.ts||0)) return; f.parts={}; }
+  f.iv=ch.iv; f.ts=ch.ts||0; f.n=ch.n; f.parts[i]=ch.d;
+  if(Object.keys(f.parts).length<f.n) return;
+  const doc={iv:f.iv,ct:Array.from({length:f.n},(_,k)=>f.parts[k]).join(""),ts:f.ts};
+  const m=S.messages.find(x=>x.img&&x.img.id===id); const blob=await openPhoto(id,doc,m&&m.img.type); if(!blob||!f.busy) return;
+  f.busy=false; clearTimeout(f.t1); clearTimeout(f.t2); unsubImage(id); await IMGDB.put(id,doc);
+  IMG_URL.set(id,URL.createObjectURL(blob)); updatePhotoEls(id); }
+async function onImageWant(id){ if(!IDRE.test(id)||!KEY) return; if(Date.now()-(IMG_SERVED.get(id)||0)<60000) return;
+  const doc=await IMGDB.get(id); if(!doc) return; IMG_SERVED.set(id,Date.now());
+  setTimeout(()=>{ for(const c of clients) if(c.connected) pubImage(c,id,doc); }, 300+Math.random()*2200); }
+function photosReconnected(){ for(const f of IMG_FETCH.values()) if(!f.busy) f.failedAt=0; flushImages(); renderMessages(); }
+async function photoUrl(m){ const id=m.img.id; if(IMG_URL.has(id)) return IMG_URL.get(id);
+  const doc=await IMGDB.get(id); if(doc){ const blob=await openPhoto(id,doc,m.img.type); if(blob){ if(!IMG_URL.has(id)) IMG_URL.set(id,URL.createObjectURL(blob)); return IMG_URL.get(id); } }
+  requestImage(id); return null; }
+function photoEl(m){ const id=m.img.id, w=Math.max(1,+m.img.w||4), h=Math.max(1,+m.img.h||3);
+  const url=IMG_URL.get(id);
+  if(url){ const el=document.createElement("img"); el.className="photo"; el.dataset.photo=id; el.alt=m.text?("Photo: "+m.text):"Photo from "+(m.name||"someone");
+    el.width=w; el.height=h; el.style.aspectRatio=`${w} / ${h}`; el.src=url; el.onclick=()=>openViewer(m); return el; }
+  const ph=document.createElement("div"); ph.className="photo photo-ph"; ph.dataset.photo=id; ph.style.aspectRatio=`${w} / ${h}`; ph.textContent=photoWaitText(id);
+  photoUrl(m).then(u=>{ if(u) updatePhotoEls(id); }); return ph; }
+function photoWaitText(id){ const f=IMG_FETCH.get(id);
+  if(!navigator.onLine) return "Photo loads when you're back online";
+  if(f && f.failedAt) return "Photo not here yet. It arrives once the sender is back online.";
+  return "Loading photo…"; }
+function updatePhotoEls(id){ const m=S.messages.find(x=>x.img&&x.img.id===id); if(!m) return;
+  for(const el of $$(`[data-photo="${CSS.escape(id)}"]`)) el.replaceWith(photoEl(m)); }
+function openViewer(m){ const url=IMG_URL.get(m.img.id); if(!url) return;
+  $("#pvImg").src=url; $("#pvImg").alt=m.text||"Photo"; $("#pvCap").textContent=m.text||""; $("#pvWho").textContent=`${m.name||"?"} · ${when(m.ts)}`;
+  const sv=$("#pvSave"); sv.hidden=NATIVE; sv.href=url; sv.download=`photo-${m.img.id}.${m.img.type==="image/webp"?"webp":"jpg"}`;
+  $("#photoView").hidden=false; $("#pvClose").focus(); }
+$("#pvClose").onclick=()=>{ $("#photoView").hidden=true; $("#pvImg").removeAttribute("src"); };
+$("#photoView").addEventListener("click",e=>{ if(e.target.id==="photoView") $("#pvClose").click(); });
+addEventListener("keydown",e=>{ if(e.key==="Escape" && !$("#photoView").hidden) $("#pvClose").click(); });
+let PENDING_PHOTO=null;
+$("#photoBtn").hidden=!PHOTO_OK;
+$("#photoBtn").onclick=async()=>{ if(!await needUnlock("Unlock the group to send photos.")) return; $("#photoFile").click(); };
+$("#photoFile").onchange=async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return;
+  try{ const p=await encodePhoto(f); if(PENDING_PHOTO) URL.revokeObjectURL(PENDING_PHOTO.url); PENDING_PHOTO=p; p.url=URL.createObjectURL(p.blob); $("#photoPrev").src=p.url;
+    $("#photoInfo").textContent=`${p.type==="image/webp"?"WebP":"JPEG"}, ${Math.max(1,Math.round(p.blob.size/1024))} KB, ${p.w}×${p.h}. Encrypted for the group. Location and camera details are removed.`;
+    $("#photoCap").value=$("#chatIn").value.trim().slice(0,300); $("#photoSheet").hidden=false; $("#photoSend").focus(); }
+  catch(err){ toast("That file couldn't be read as a picture."); } };
+$("#photoCancel").onclick=()=>{ $("#photoSheet").hidden=true; if(PENDING_PHOTO){ URL.revokeObjectURL(PENDING_PHOTO.url); PENDING_PHOTO=null; } };
+$("#photoSheet").addEventListener("submit",async e=>{ e.preventDefault(); const p=PENDING_PHOTO; if(!p) return; const btn=$("#photoSend"); btn.disabled=true;
+  try{ const cap=$("#photoCap").value; if(await sendPhoto(p,cap)){ if($("#chatIn").value.trim()===cap.trim()) $("#chatIn").value=""; $("#photoSheet").hidden=true; PENDING_PHOTO=null; } }
+  finally{ btn.disabled=false; } });
+async function sendPhoto(p, caption){ if(!KEY){ needUnlock("Unlock the group to send photos."); return false; } const n=await ensureName(); if(!n) return false;
+  const id=rid(), iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv,additionalData:aad(id)},KEY,await p.blob.arrayBuffer());
+  const doc={iv:b64(iv),ct:b64(ct),ts:Date.now()};
+  if(!await IMGDB.put(id,doc)){ toast("Couldn't save the photo on this phone."); return false; }
+  IMG_URL.set(id,p.url); IMG_OUT.add(id); saveImgOut();
+  await writeLocal("messages/"+rid(),{name:n,dev:DEVICE,text:(caption||"").trim().slice(0,300),kind:"photo",img:{id,w:p.w,h:p.h,type:p.type,size:p.blob.size}});
+  flushImages(); renderMessages(true); return true; }
+
 /* ================= chat ================= */
 function renderChatNote(){
   let t="";
@@ -879,7 +980,11 @@ function renderMessages(force){
     el.className="msg"+(mine?" me":"")+(m.kind==="status"?" status":"")+(m.locked?" locked":"");
     const who=document.createElement("div"); who.className="who"; const n=document.createElement("span"); n.textContent=m.locked?"Locked":(m.name||"?"); const t=document.createElement("span"); t.textContent=when(m.ts);
     who.append(n,t); if(OUTBOX.has(m.key) && (MODE==="artifact"||RELAY)){ const w=document.createElement("span"); w.textContent="waiting"; who.append(w); }
-    const tx=document.createElement("div"); tx.className="txt"; tx.textContent= m.locked ? "Written with a different passphrase." : (m.text||""); el.append(who,tx);
+    const isPhoto = !m.locked && m.kind==="photo" && m.img && IDRE.test(m.img.id||"");
+    if(isPhoto && IMG_OUT.has(m.img.id) && !OUTBOX.has(m.key) && RELAY){ const w=document.createElement("span"); w.textContent="waiting"; who.append(w); }
+    const tx=document.createElement("div"); tx.className="txt"; tx.textContent= m.locked ? "Written with a different passphrase." : (m.text||"");
+    el.append(who); if(isPhoto){ if(PHOTO_OK) el.append(photoEl(m)); else tx.textContent="Photo (open the app or website to see it)"+(m.text?": "+m.text:""); }
+    if(tx.textContent) el.append(tx);
     row.append(avatarEl(m.locked?null:profileFor(m), m.locked?"?":m.name), el); box.append(row); }
   if(atBottom||force) box.scrollTop=box.scrollHeight;
 }
