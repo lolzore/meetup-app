@@ -517,16 +517,23 @@ const GLYPH={
   money:'<path d="M4 8.5h15l-3.5-3.5M20 15.5H5l3.5 3.5"/>',
   atm:'<rect x="2.5" y="6.5" width="19" height="11" rx="1.5"/><circle cx="12" cy="12" r="2.6"/><path d="M6 10v4M18 10v4"/>',
   bus:'<rect x="5" y="3" width="14" height="15" rx="2.5"/><path d="M5 11h14M8 18v2.5M16 18v2.5M8.5 14.5h.01M15.5 14.5h.01"/>',
-  plane:'<path d="M12 3c.9 0 1.5.9 1.5 2v4.5l7 4.2v2l-7-2.2v4l2.2 1.6V21L12 20l-3.7 1v-1.9l2.2-1.6v-4l-7 2.2v-2l7-4.2V5c0-1.1.6-2 1.5-2z" fill="#fff" stroke="none"/>',
-  pharmacy:'<path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6z" fill="#fff" stroke="none"/>',
+  plane:'<path d="M12 3c.9 0 1.5.9 1.5 2v4.5l7 4.2v2l-7-2.2v4l2.2 1.6V21L12 20l-3.7 1v-1.9l2.2-1.6v-4l-7 2.2v-2l7-4.2V5c0-1.1.6-2 1.5-2z" fill="currentColor" stroke="none"/>',
+  pharmacy:'<path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6z" fill="currentColor" stroke="none"/>',
   hospital:'<path d="M7 4.5v15M17 4.5v15M7 12h10"/>',
   sight:'<path d="M3 20.5h18M5.5 20.5V10.5M10 20.5V10.5M14 20.5V10.5M18.5 20.5V10.5M3 10.5l9-6 9 6z"/>',
   avoid:'<path d="M12 5.5v8.5M12 18.4v.1" stroke-width="3.2"/>',
   protest:'<path d="M4 10v4M4 12h3l10 5V7L7 12M8 13l1.5 6"/>',
   people:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>',
-  ours:'<path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2"/>'
+  ours:'<path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2"/>',
+  bank:'<path d="M3 9.5 12 4l9 5.5M5 9.5h14M6.5 12v5M10.5 12v5M13.5 12v5M17.5 12v5M4 20h16"/>',
+  fuel:'<path d="M5 20V5a1.5 1.5 0 0 1 1.5-1.5h6A1.5 1.5 0 0 1 14 5v15M3.5 20h12M5 10h9M14 8l3 2.5V17a1.5 1.5 0 0 0 3 0v-6l-2-3"/>',
+  police:'<path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/>',
+  taxi:'<path d="M5.5 16.5v2.5M18.5 16.5v2.5M4 16.5h16v-4l-2.2-5H6.2L4 12.5zM4 12.5h16M10 4.5h4"/>',
+  wc:'<path d="M2.5 7.5 4.5 17l2.5-7 2.5 7 2-9.5M21 9a3.5 3.5 0 1 0 0 6"/>',
+  phone:'<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/>',
+  bag:'<path d="M5 8h14l-1 12.5H6zM9 8V6.5a3 3 0 0 1 6 0V8"/>'
 };
-const CATGLYPH={eat:"eat",cheap:"eat",cafe:"cafe",shop:"shop",money:"money",atm:"atm",bus:"bus",health:"pharmacy",sight:"sight",transport:"plane",avoid:"avoid",protest:"protest",people:"people",ours:"ours"};
+const CATGLYPH={osm:"bag",eat:"eat",cheap:"eat",cafe:"cafe",shop:"shop",money:"money",atm:"atm",bus:"bus",health:"pharmacy",sight:"sight",transport:"plane",avoid:"avoid",protest:"protest",people:"people",ours:"ours"};
 function glyphFor(p){ const n=(p.name||"").toLowerCase(), c=p.cat;
   if(c==="cafe"||c==="eat"||c==="cheap"){
     if(/bakery|byrek|furr/.test(n)) return "bakery";
@@ -537,12 +544,19 @@ function glyphFor(p){ const n=(p.name||"").toLowerCase(), c=p.cat;
   if(c==="shop") return /post/.test(n)?"post":"shop";
   if(c==="health") return /hospital|spital/.test(n)?"hospital":"pharmacy";
   return CATGLYPH[c]||"ours"; }
-const svgGlyph=(g,size)=>`<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${GLYPH[g]||""}</svg>`;
+const svgGlyph=(g,size,col)=>`<svg viewBox="0 0 24 24" width="${size}" height="${size}" style="color:${col||"#fff"}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${GLYPH[g]||""}</svg>`;
 const chipDot=(c)=>`<i class="cdot" style="background:${CATS[c][1]}">${svgGlyph(CATGLYPH[c],11)}</i>`;
 const POI_CACHE={};
+const OSMCOL={eat:"#0f5566",cafe:"#7a4fb0",bar:"#7a4fb0",bakery:"#8a5a2b",shop:"#2a6e46",atm:"#b8860b",bank:"#b8860b",money:"#b8860b",pharmacy:"#d0396b",hospital:"#d0396b",
+  fuel:"#58707a",post:"#58707a",police:"#1d6fd1",bus:"#1d6fd1",taxi:"#b8860b",wc:"#58707a",phone:"#1d6fd1",bag:"#58707a"};
+const OSM_ICON={};
+const osmIcon = g => OSM_ICON[g] ||= L.divIcon({className:"",iconSize:[22,22],iconAnchor:[11,11],popupAnchor:[0,-10],
+  html:`<div class="poi osm" style="color:${OSMCOL[g]||"#58707a"}">${svgGlyph(g,13,OSMCOL[g]||"#58707a")}</div>`});
+const OSMPRI={shop:0,atm:0,pharmacy:0,money:1,bakery:1,eat:2,cafe:2,bar:2,bus:2,hospital:3,bank:3,taxi:3,phone:4,post:4,police:4,fuel:5,wc:5,bag:6};
+const prettyKind = k => { const t=(k||"place").replace(/_/g," "); return t[0].toUpperCase()+t.slice(1); };
 function poiIcon(col,g,small){ const k=col+g+(small?1:0); return POI_CACHE[k] ||= L.divIcon({className:"", iconSize:small?[24,24]:[28,28], iconAnchor:small?[12,12]:[14,14], popupAnchor:[0,-12],
   html:`<div class="poi${small?" small":""}" style="background:${col}">${svgGlyph(g,small?13:15)}</div>`}); }
-const CATS={people:["Friends","#1d6fd1"],eat:["Restaurants","#0f5566"],cheap:["Cheap eats","#2a6e46"],cafe:["Cafés & bars","#7a4fb0"],shop:["Shops","#58707a"],money:["Exchange","#b8860b"],atm:["ATMs","#d4a017"],bus:["Bus","#1d6fd1"],health:["Health","#d0396b"],sight:["Sights","#8a5a2b"],transport:["Airport","#1d6fd1"],avoid:["Avoid","#c32f27"],protest:["Protest zones","#c32f27"],ours:["Our pins","#e0661b"]};
+const CATS={osm:["More places","#58707a"],people:["Friends","#1d6fd1"],eat:["Restaurants","#0f5566"],cheap:["Cheap eats","#2a6e46"],cafe:["Cafés & bars","#7a4fb0"],shop:["Shops","#58707a"],money:["Exchange","#b8860b"],atm:["ATMs","#d4a017"],bus:["Bus","#1d6fd1"],health:["Health","#d0396b"],sight:["Sights","#8a5a2b"],transport:["Airport","#1d6fd1"],avoid:["Avoid","#c32f27"],protest:["Protest zones","#c32f27"],ours:["Our pins","#e0661b"]};
 const placeDist = p => (p.lat==null||!H) ? null : dist(H.lat,H.lon,p.lat,p.lon);
 let pArea="golem", pCat="all";
 const LISTCATS=["all","eat","cheap","cafe","money","atm","shop","bus","health","sight","avoid","protest"];
@@ -615,8 +629,8 @@ eurIn.oninput=fromEur; allIn.oninput=fromAll; rateIn.oninput=()=>{store.set("rat
 let homeMarker=null, map=null, layers={}, markers=[], meMarker=null, meLine=null, tiles=null, meetMarker=null, pinLayer=null, pinMarkers={}, pick=null, draft=null, draftMarker=null;
 const AREAS={golem:[[GOLEM.lat,GOLEM.lon],14],durres:[[41.3140,19.4500],15],tirana:[[41.3260,19.8180],14],airport:[[41.4140,19.7197],14]};
 const ALBANIA=[[39.64,19.26],[42.66,21.06]];
-const MAPCATS=["people","ours","eat","cheap","cafe","money","atm","shop","bus","health","sight","avoid","protest"];
-let mapOn=Object.assign({people:1,ours:1,eat:1,cheap:1,cafe:1,money:1,atm:1,bus:1,health:1,sight:1,avoid:1,protest:1,shop:0}, store.get("mapcats",{}));
+const MAPCATS=["people","ours","eat","cheap","cafe","money","atm","shop","bus","health","sight","avoid","protest","osm"];
+let mapOn=Object.assign({osm:1,people:1,ours:1,eat:1,cheap:1,cafe:1,money:1,atm:1,bus:1,health:1,sight:1,avoid:1,protest:1,shop:0}, store.get("mapcats",{}));
 
 /* ---- offline country map (OpenStreetMap, built in) ---- */
 let G=null;
@@ -629,14 +643,15 @@ async function loadCountry(){
 }
 function decodeLine(a){ const out=new Array(a.length/2); let la=a[0], lo=a[1]; out[0]=[39+la/1e5,19+lo/1e5]; for(let i=2,j=1;i<a.length;i+=2,j++){ la+=a[i]; lo+=a[i+1]; out[j]=[39+la/1e5,19+lo/1e5]; } return out; }
 // [min zoom, width at z15, colour token]; drawn bottom to top
-const RS={res:[14,5,"--road"],ped:[15,4,"--road"],unc:[13,5,"--road"],ter:[12,6,"--road"],lnk:[11,4,"--road-major"],sec:[9,7,"--road-major"],pri:[8,8,"--road-major"],tru:[7,9,"--road-major"],mot:[7,10,"--road-major"]};
-const ORDER=["res","ped","unc","ter","lnk","sec","pri","tru","mot"];
+const RS={fp:[16,2,"--path"],trk:[14,2.5,"--path"],svc:[15,3.5,"--road"],res:[14,5,"--road"],ped:[15,4,"--road"],unc:[13,5,"--road"],ter:[12,6,"--road"],lnk:[11,4,"--road-major"],sec:[9,7,"--road-major"],pri:[8,8,"--road-major"],tru:[7,9,"--road-major"],mot:[7,10,"--road-major"]};
+const ORDER=["fp","trk","svc","res","ped","unc","ter","lnk","sec","pri","tru","mot"];
 const PLACEZ={city:7,town:9,village:12,suburb:13};
-const wFor=(cls,z)=>Math.max(cls==="res"||cls==="unc"||cls==="ped"?1.2:1.6, RS[cls][1]*Math.pow(2,(z-15)*.62));
+const THIN=new Set(["fp","trk","svc"]), NOCASE=new Set(["fp","trk"]);
+const wFor=(cls,z)=>Math.max(THIN.has(cls)?1:cls==="res"||cls==="unc"||cls==="ped"?1.2:1.6, RS[cls][1]*Math.pow(2,(z-15)*.62));
 let R=null, RD={}, tok=null, globalRoads={}, cellCache={}, activeCells=new Set(), placeLayer=null, roadLabelLayer=null, rivers=null, urbanStyle=null;
 const MAJOR=new Set(["lnk","sec","pri","tru","mot"]);
-function roadPair(lines, cls){ const mj=MAJOR.has(cls); return { cls, c:L.polyline(lines,{renderer:mj?RD.casMaj:RD.casMin,color:tok("--road-edge"),weight:3,interactive:false,lineCap:"round",lineJoin:"round",smoothFactor:.6}),
-  f:L.polyline(lines,{renderer:mj?RD.filMaj:RD.filMin,color:tok(RS[cls][2]),weight:2,interactive:false,lineCap:"round",lineJoin:"round",smoothFactor:.6}) }; }
+function roadPair(lines, cls){ const mj=MAJOR.has(cls), nc=NOCASE.has(cls); return { cls, c:L.polyline(lines,{renderer:mj?RD.casMaj:RD.casMin,color:tok("--road-edge"),weight:3,opacity:nc?0:1,interactive:false,lineCap:"round",lineJoin:"round",smoothFactor:.6}),
+  f:L.polyline(lines,{renderer:mj?RD.filMaj:RD.filMin,color:tok(RS[cls][2]),weight:2,dashArray:cls==="fp"?"3 4":null,interactive:false,lineCap:cls==="fp"?"butt":"round",lineJoin:"round",smoothFactor:.6}) }; }
 function buildCell(key){
   const c=G.c[key]; const out={pairs:[], urban:null, b:L.latLngBounds([c.b[0],c.b[1]],[c.b[2],c.b[3]])};
   if(c.u && c.u.length) out.urban=L.polygon(c.u.map(r=>[decodeLine(r)]),{renderer:RD.urb,stroke:false,fillColor:tok("--urban"),fillOpacity:1,interactive:false});
@@ -659,6 +674,7 @@ function syncMap(){
     for(const p of cl.pairs){ const show=z>=RS[p.cls][0];
       if(show!==map.hasLayer(p.f)){ if(show){ p.c.addTo(map); p.f.addTo(map); } else { map.removeLayer(p.c); map.removeLayer(p.f); } }
       if(show){ const w=wFor(p.cls,z); p.f.setStyle({weight:w}); p.c.setStyle({weight:w+(z>=13?2.2:1.2)}); } } }
+  syncOsm(z);
   // labels: towns first, then villages, then street names; skip any that would overlap
   placeLayer.clearLayers(); roadLabelLayer.clearLayers(); const tight=map.getBounds();
   const PRI={city:0,town:1,suburb:2,village:3}; const cands=[];
@@ -673,6 +689,28 @@ function syncMap(){
     boxes.push([pt.x,pt.y,w,h]); n++;
     L.tooltip({permanent:true,direction:"center",className:cls,interactive:false}).setLatLng([la,lo]).setContent(esc(name)).addTo(pr<5?placeLayer:roadLabelLayer); }
 }
+/* everyday places from OpenStreetMap (snapshot of the map data), shown from zoom 16, only those in view */
+const osmMarkers=new Map(); let curatedLL=null;
+function nearCurated(la,lo){ curatedLL ||= D.places.filter(p=>p.lat!=null).map(p=>[p.lat,p.lon]);
+  for(const [a,b] of curatedLL) if(Math.abs(a-la)<0.0003 && Math.abs(b-lo)<0.0004) return true; return false; }
+function osmPopup(r,la,lo){ const name=r[3], kind=prettyKind(r[4]), d=H?dist(H.lat,H.lon,la,lo):null;
+  return `<b>${esc(name||kind)}</b><br>${name?esc(kind):""}${name&&d!=null?" · ":""}${d!=null?fmtDist(d)+" from home":""}${r[5]?`<br>${esc(r[5])}`:""}
+    <br><span class="small">From OpenStreetMap. Check Google Maps for reviews and current hours.</span>
+    <div class="popbtns"><button type="button" data-act="meetosm" data-lat="${la}" data-lon="${lo}" data-name="${esc(name||kind)}">Make meeting point</button><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name?name+" ":"")}${la},${lo}" target="_blank" rel="noopener" class="btn" style="min-height:32px;padding:.15rem .65rem;font-size:.8rem">Google Maps</a></div>`; }
+function syncOsm(z){ const lay=layers.osm; if(!lay||!G) return;
+  if(mapOn.osm===0 || z<16){ if(osmMarkers.size){ lay.clearLayers(); osmMarkers.clear(); } return; }
+  // thin out busy streets: named places and everyday needs first, then nothing closer than ~26 px to another icon
+  const vb=map.getBounds().pad(.3), cand=[], want=new Map(), taken=new Set(), GR=26;
+  for(const key of activeCells){ const rows=G.c[key]&&G.c[key].s; if(!rows) continue;
+    for(let i=0;i<rows.length;i++){ const r=rows[i], la=39+r[0]/1e5, lo=19+r[1]/1e5; if(!vb.contains([la,lo])||nearCurated(la,lo)) continue;
+      cand.push([(r[3]?0:10)+(OSMPRI[r[2]]??5), key+"#"+i, r, la, lo]); } }
+  cand.sort((a,b)=>a[0]-b[0]);
+  for(const [,k,r,la,lo] of cand){ const pt=map.latLngToLayerPoint([la,lo]), gx=Math.round(pt.x/GR), gy=Math.round(pt.y/GR);
+    let hit=false; for(let dx=-1;dx<=1&&!hit;dx++) for(let dy=-1;dy<=1;dy++) if(taken.has((gx+dx)+","+(gy+dy))){ hit=true; break; }
+    if(hit) continue; taken.add(gx+","+gy); want.set(k,[r,la,lo]); if(want.size>=250) break; }
+  for(const [k,m] of osmMarkers) if(!want.has(k)){ lay.removeLayer(m); osmMarkers.delete(k); }
+  for(const [k,[r,la,lo]] of want){ if(osmMarkers.has(k)) continue;
+    const m=L.marker([la,lo],{icon:osmIcon(r[2]),keyboard:false,title:r[3]||prettyKind(r[4])}).bindPopup(()=>osmPopup(r,la,lo)); osmMarkers.set(k,m); lay.addLayer(m); } }
 async function drawBase(){
   const g=await loadCountry(); if(!g){ $("#maptip").hidden=false; $("#maptip").textContent="This browser can't unpack the built-in map. Update the browser, or use Organic Maps."; return; }
   const z=map.getZoom();
@@ -717,6 +755,7 @@ function initMap(){
 }
 function onPopupAction(e){ const b=e.target.closest("[data-act]"); if(!b) return;
   const act=b.dataset.act;
+  if(act==="meetosm"){ setMeetup({label:b.dataset.name,lat:+b.dataset.lat,lon:+b.dataset.lon}).then(ok=>ok&&map.closePopup()); }
   if(act==="meetplace"){ const p=D.places[+b.dataset.i]; setMeetup({label:p.name,lat:p.lat,lon:p.lon}).then(ok=>ok&&map.closePopup()); }
   if(act==="meetpin"){ const p=S.pins.find(x=>x.key===b.dataset.key); if(p) setMeetup({label:p.label,lat:p.lat,lon:p.lon}).then(ok=>ok&&map.closePopup()); }
   if(act==="delpin") delPin(b.dataset.key,b);
@@ -739,7 +778,7 @@ function drawMeet(){ if(!map) return; const m=S.meetup; if(!m || m.home){ if(mee
   else { meetMarker.setLatLng([m.lat,m.lon]); meetMarker.setPopupContent(html()); } }
 function renderMapChips(){
   $("#mapChips").innerHTML=MAPCATS.filter(c=>RELAY||c!=="people").map(c=>`<button type="button" class="chip" data-mc="${c}" aria-pressed="${mapOn[c]!==0}">${chipDot(c)}${CATS[c][0]}</button>`).join("");
-  $$("#mapChips .chip").forEach(b=>b.onclick=()=>{ const c=b.dataset.mc; mapOn[c]= mapOn[c]===0?1:0; store.set("mapcats",mapOn); if(mapOn[c]) layers[c].addTo(map); else map.removeLayer(layers[c]); renderMapChips(); });
+  $$("#mapChips .chip").forEach(b=>b.onclick=()=>{ const c=b.dataset.mc; mapOn[c]= mapOn[c]===0?1:0; store.set("mapcats",mapOn); if(mapOn[c]) layers[c].addTo(map); else map.removeLayer(layers[c]); if(c==="osm") syncOsm(map.getZoom()); renderMapChips(); });
 }
 function focusPlace(i){ initMap(); if(!map) return; const p=D.places[i], c=p.cat; if(mapOn[c]===0){ mapOn[c]=1; layers[c].addTo(map); renderMapChips(); }
   map.setView([p.lat,p.lon],p.cat==="protest"?15:17); markers[i]?.openPopup(); }

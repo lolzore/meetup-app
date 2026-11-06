@@ -11,10 +11,24 @@ KLAT = 110574; KLON = 111320 * math.cos(math.radians(41))
 ROADCLS = {
  'motorway':'mot','motorway_link':'lnk','trunk':'tru','trunk_link':'lnk','primary':'pri','primary_link':'lnk',
  'secondary':'sec','secondary_link':'lnk','tertiary':'ter','tertiary_link':'lnk',
- 'unclassified':'unc','residential':'res','living_street':'res','pedestrian':'ped','road':'unc'}
+ 'unclassified':'unc','residential':'res','living_street':'res','pedestrian':'ped','road':'unc',
+ 'service':'svc','track':'trk','footway':'fp','path':'fp','steps':'fp','cycleway':'fp','bridleway':'fp'}
+SKIP_SERVICE = {'parking_aisle','driveway','drive-through','emergency_access'}
 GLOBAL_ROADS = {'mot','tru','pri','sec','lnk'}
-EPS = {'mot':12,'tru':12,'pri':10,'sec':8,'lnk':6,'ter':6,'unc':6,'res':4,'ped':4}
+EPS = {'mot':8,'tru':8,'pri':6,'sec':5,'lnk':3,'ter':3,'unc':3,'res':2.5,'ped':2,'svc':2,'fp':2.5,'trk':5}
 PLACES = {'city':'city','town':'town','village':'village','suburb':'suburb'}
+# Everyday places from OpenStreetMap (the hand-picked list in data.py is separate): amenity/shop value -> app glyph code
+POI_AM = {'restaurant':'eat','fast_food':'eat','food_court':'eat','cafe':'cafe','ice_cream':'cafe','bar':'bar','pub':'bar','nightclub':'bar',
+ 'atm':'atm','bank':'bank','bureau_de_change':'money','money_transfer':'money','pharmacy':'pharmacy','hospital':'hospital','clinic':'hospital',
+ 'doctors':'hospital','dentist':'hospital','fuel':'fuel','post_office':'post','police':'police','bus_station':'bus','taxi':'taxi','toilets':'wc','marketplace':'shop'}
+POI_SHOP = {'supermarket':'shop','convenience':'shop','general':'shop','kiosk':'shop','greengrocer':'shop','butcher':'shop','seafood':'shop',
+ 'alcohol':'shop','beverages':'shop','mall':'shop','department_store':'shop','bakery':'bakery','pastry':'bakery','chemist':'pharmacy',
+ 'mobile_phone':'phone','telecommunication':'phone','clothes':'bag','shoes':'bag','gift':'bag','souvenir':'bag','beach':'bag','sports':'bag','optician':'bag','tobacco':'shop'}
+def poi_code(t):
+    am = t.get('amenity'); sh = t.get('shop')
+    if am in POI_AM: return POI_AM[am], am
+    if sh in POI_SHOP: return POI_SHOP[sh], sh
+    return None, None
 
 def enc(pts):
     out=[]; pl=po=0
@@ -36,7 +50,7 @@ def ring_simplify(pts, eps):
 
 def cell_of(la, lo): return f"{int(math.floor(la/CELL))}_{int(math.floor(lo/CELL))}"
 
-cells = defaultdict(lambda: {"r": defaultdict(list), "lbl": {}, "p": [], "u": [], "b": [90,180,-90,-180]})
+cells = defaultdict(lambda: {"r": defaultdict(list), "lbl": {}, "p": [], "u": [], "s": [], "b": [90,180,-90,-180]})
 glob_roads = defaultdict(list)
 rivers = []; coast = []; lakes = []; border = []
 counts = defaultdict(int)
@@ -56,15 +70,32 @@ for o in fp:
             la, lo = o.location.lat, o.location.lon
             c = cells[cell_of(la,lo)]; c["p"].append([name, PLACES[pl], round(la,5), round(lo,5)]); grow(c,[(la,lo)])
             counts['place_'+pl] += 1
-    elif o.is_way():
+    if (o.is_node() or o.is_way()) and ('amenity' in o.tags or 'shop' in o.tags):
+        code, kind = poi_code(o.tags)
+        if code:
+            try:
+                if o.is_node(): la, lo = o.location.lat, o.location.lon
+                else:
+                    ps = [(n.location.lat, n.location.lon) for n in o.nodes]; la = sum(p[0] for p in ps)/len(ps); lo = sum(p[1] for p in ps)/len(ps)
+                t = o.tags; name = (t.get('name:sq') or t.get('name') or '')[:48]
+                row = [round((la-39)*1e5), round((lo-19)*1e5), code, name, kind]
+                if t.get('opening_hours'): row.append(t.get('opening_hours')[:60])
+                c = cells[cell_of(la,lo)]; c["s"].append(row); grow(c, [(la,lo)]); counts['poi'] += 1
+            except Exception: pass
+    if o.is_way():
         t = o.tags; hw = t.get('highway')
         try: pts = [(n.location.lat, n.location.lon) for n in o.nodes]
         except osmium.InvalidLocationError: continue
         if len(pts) < 2: continue
         if hw in ROADCLS:
             if t.get('area') == 'yes': continue
-            cls = ROADCLS[hw]; s = simplify(pts, EPS[cls]); counts[cls] += 1
+            cls = ROADCLS[hw]
             name = t.get('name:sq') or t.get('name') or ''
+            if cls == 'svc' and t.get('service') in SKIP_SERVICE and not name: continue
+            if cls == 'fp' and t.get('footway') in ('sidewalk','crossing') and not name: continue   # drawn alongside the street already
+            if cls == 'trk' and not name and t.get('tracktype') != 'grade1': continue   # farm and hill tracks: not useful here
+            eps = 0.8 if t.get('junction') in ('roundabout','circular') else EPS[cls]
+            s = simplify(pts, eps); counts[cls] += 1
             if cls in GLOBAL_ROADS:
                 glob_roads[cls].append(enc(s))
                 key = cell_of(*s[len(s)//2])
@@ -111,21 +142,21 @@ main = list(chains[0].coords)
 if main[0][1] < main[-1][1]: main = main[::-1]          # north -> south
 islands = [list(g.coords) for g in chains[1:] if g.is_ring]
 sea_pts = [(la,lo) for lo,la in main]
-sea_pts = simplify(sea_pts, 30)
+sea_pts = simplify(sea_pts, 8)
 west = 18.3
 sea = sea_pts + [(sea_pts[-1][0], west), (sea_pts[0][0], west)]
 isl = []
 for r in islands:
     rr = ring_simplify([(la,lo) for lo,la in r], 20)
     if rr: isl.append(enc(rr))
-coast_lines = [enc(simplify([(la,lo) for lo,la in g.coords], 20)) for g in chains if len(g.coords) > 1]
+coast_lines = [enc(simplify([(la,lo) for lo,la in g.coords], 6)) for g in chains if len(g.coords) > 1]
 
 # ---- pack cells
 outcells = {}
 for k, c in cells.items():
     if c["b"][0] > c["b"][2]: continue
     lbl = [[n, v[1], v[2], v[3]] for n, v in c["lbl"].items()]
-    outcells[k] = {"b": [round(x,4) for x in c["b"]], "r": dict(c["r"]), "l": lbl, "p": c["p"], "u": c["u"]}
+    outcells[k] = {"b": [round(x,4) for x in c["b"]], "r": dict(c["r"]), "l": lbl, "p": c["p"], "u": c["u"], "s": c["s"]}
 
 out = {"v": 1, "g": dict(glob_roads), "rv": rivers, "lk": lakes, "sea": enc(sea), "isl": isl, "cst": coast_lines, "bd": border, "c": outcells}
 raw = json.dumps(out, ensure_ascii=False, separators=(",", ":")).encode()

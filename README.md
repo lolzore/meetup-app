@@ -13,7 +13,7 @@ Offline trip companion for the Albanian coast around Golem and Durrës, plus Tir
 ## What's in it
 
 - **Home:** taxi card in Albanian (filled in from the group, see below), compass to home or the meeting point, editable meeting point, live location, emergency numbers, notes, arrival checklist.
-- **Map:** the whole of Albania offline (every road, town, river and lake from OpenStreetMap, 3 Nov 2026), places, protest zones, your own pins, friends' location dots.
+- **Map:** the whole of Albania offline (every road and footpath, town, river and lake from OpenStreetMap, 3 Nov 2026, plus ~18,000 shops, cafés, ATMs and pharmacies from the same data, shown when zoomed in), our picked places, protest zones, your own pins, friends' location dots.
 - **Places:** rated restaurants, cheap eats, cafés and bars, exchange offices, ATMs, buses, pharmacies, an avoid list, and the group's pins.
 - **Info:** getting around, money and exchange, safety and the avoid list, phrasebook, offline tips, sources.
 - **Chat:** end-to-end encrypted group chat. Photos too: each one is shrunk on the phone to a WebP (or JPEG on phones that can't make WebP, such as iPhones) of at most ~180 KB, with location and camera details removed, then encrypted.
