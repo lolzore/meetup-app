@@ -52,6 +52,19 @@ Push this repo to GitHub. The **iPhone IPA** action builds `albania-meetup.ipa` 
 - **SideStore:** after a one-time setup on a computer, the iPhone re-signs the app by itself, which matters for a trip longer than a week.
 - **AltStore Classic:** also works, but refreshing needs the PC on the same Wi-Fi.
 
+## Releases (APK + IPA on the GitHub Releases page)
+
+One-time setup: add three repository secrets (Settings → Secrets and variables → Actions): `ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS`. They hold the Android signing key. Every release must be signed with the same key, or phones refuse to install the update over the old app, so keep a backup of the key outside this repo.
+
+Then, for each release:
+
+```
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The "Release (APK + IPA)" workflow builds both apps and publishes them as a release with that tag (about 10 minutes). You can also start it from the Actions tab with "Run workflow" and type a tag. The IPA is unsigned; AltStore, SideStore or Sideloadly sign it with your own Apple ID when installing.
+
 ## Host the website
 
 Push to a **public** GitHub repo. Then go to Settings → Pages → Source: **GitHub Actions**. The *Website* action publishes `web/` at `https://<you>.github.io/<repo>/`.

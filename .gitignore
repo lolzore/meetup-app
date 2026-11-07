@@ -13,3 +13,6 @@ ios/DerivedData/
 .DS_Store
 __pycache__/
 *.pyc
+*.jks
+*.keystore
+PRIVATE-*

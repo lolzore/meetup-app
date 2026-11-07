@@ -1,0 +1,81 @@
+name: Release (APK + IPA)
+# Push a tag like v1.0.0 (or run this by hand) to build both apps and publish them as a GitHub Release.
+on:
+  push: { tags: ['v*'] }
+  workflow_dispatch:
+    inputs:
+      tag: { description: 'Release tag, e.g. v1.0.0', required: true }
+permissions:
+  contents: write
+env:
+  TAG: ${{ github.event.inputs.tag || github.ref_name }}
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: npm ci
+      - run: python3 scripts/build.py
+      - run: npx cap sync android
+      - name: Build signed APK
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::error::The ANDROID_KEYSTORE_B64 secret is missing. See README, section Releases."; exit 1; fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          export ANDROID_KEYSTORE_FILE="$RUNNER_TEMP/release.jks"
+          V="${TAG#v}"; export VERSION_NAME="$V"
+          export VERSION_CODE=$(echo "$V" | awk -F. '{ printf "%d", ($1*10000)+($2*100)+$3 }')
+          [ "$VERSION_CODE" -gt 0 ] || export VERSION_CODE=${{ github.run_number }}
+          cd android && chmod +x gradlew && ./gradlew assembleRelease --no-daemon
+          cp app/build/outputs/apk/release/app-release.apk ../albania-meetup.apk
+      - uses: actions/upload-artifact@v4
+        with: { name: apk, path: albania-meetup.apk }
+  ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - run: python3 scripts/build.py
+      - run: npx cap sync ios
+      - name: Build without signing
+        run: |
+          V="${TAG#v}"
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
+            MARKETING_VERSION="$V" CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+      - name: Package .ipa
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qr albania-meetup.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with: { name: ipa, path: albania-meetup.ipa }
+  release:
+    needs: [android, ios]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { merge-multiple: true }
+      - name: Publish the release
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          NOTES="Android: open albania-meetup.apk on the phone and allow installing from this source.
+          iPhone: install albania-meetup.ipa with AltStore, SideStore or Sideloadly (it is unsigned; the tool signs it with your Apple ID).
+          Website: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          if gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" albania-meetup.apk albania-meetup.ipa --clobber -R "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" albania-meetup.apk albania-meetup.ipa -R "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" --title "Albania Meetup Map&Chat $TAG" --notes "$NOTES"
+          fi
