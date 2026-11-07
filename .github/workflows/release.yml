@@ -27,9 +27,16 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: |
-          if [ -z "$KEYSTORE_B64" ]; then
-            echo "::error::The ANDROID_KEYSTORE_B64 secret is missing. See README, section Releases."; exit 1; fi
-          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          else
+            # No key saved in the repo secrets: sign with a fresh random self-signed key.
+            # Note: an APK signed with a different key can't install over the previous one (uninstall first).
+            echo "::warning::No ANDROID_KEYSTORE_B64 secret, signing with a random one-off key."
+            export ANDROID_KEYSTORE_PASSWORD=$(openssl rand -hex 24) ANDROID_KEY_ALIAS=meetup
+            keytool -genkeypair -storetype PKCS12 -keystore "$RUNNER_TEMP/release.jks" -alias meetup -keyalg RSA -keysize 3072 \
+              -validity 10000 -storepass "$ANDROID_KEYSTORE_PASSWORD" -keypass "$ANDROID_KEYSTORE_PASSWORD" -dname "CN=meetup-app"
+          fi
           export ANDROID_KEYSTORE_FILE="$RUNNER_TEMP/release.jks"
           V="${TAG#v}"; export VERSION_NAME="$V"
           export VERSION_CODE=$(echo "$V" | awk -F. '{ printf "%d", ($1*10000)+($2*100)+$3 }')

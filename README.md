@@ -54,7 +54,7 @@ Push this repo to GitHub. The **iPhone IPA** action builds `albania-meetup.ipa` 
 
 ## Releases (APK + IPA on the GitHub Releases page)
 
-One-time setup: add three repository secrets (Settings → Secrets and variables → Actions): `ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS`. They hold the Android signing key. Every release must be signed with the same key, or phones refuse to install the update over the old app, so keep a backup of the key outside this repo.
+Optional one-time setup (without it, each release is signed with a new random key, so the APK can only be installed after uninstalling the previous one): add three repository secrets (Settings → Secrets and variables → Actions): `ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS`. They hold the Android signing key. Every release must be signed with the same key, or phones refuse to install the update over the old app, so keep a backup of the key outside this repo.
 
 Then, for each release:
 
